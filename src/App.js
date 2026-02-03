@@ -1,25 +1,180 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Coffee, User, CreditCard, LayoutDashboard, Utensils } from 'lucide-react';
 
-function App() {
+// Page Imports
+import LandingPage from './pages/LandingPage'; // NEW
+import CustomerMenu from './pages/CustomerMenu';
+import AdminDashboard from './pages/AdminDashboard';
+import StaffOrders from './pages/StaffOrders';
+import Login from './pages/Login';
+import OrderSuccess from './pages/OrderSuccess';
+import Plans from './pages/Plans';
+import Profile from './pages/Profile';
+import Register from './pages/Register';
+
+
+
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const user = JSON.parse(localStorage.getItem('user'));
+
+  if (!user) {
+    return <Link to="/login" />; // Not logged in? Go to login
+  }
+
+  if (!allowedRoles.includes(user.role)) {
+    return <div style={{textAlign: 'center', marginTop: '50px'}}><h1>Access Denied</h1><p>You do not have permission to view this page.</p></div>;
+  }
+
+  return children;
+};
+
+// Create a small sub-component to handle conditional navbar
+function Layout({ children }) {
+  const location = useLocation();
+  
+  // 1. Get user data from storage
+  const user = JSON.parse(localStorage.getItem('user')); 
+  const role = user?.role; // 'customer', 'staff', or 'admin'
+
+  const hideNavbar = ['/', '/login', '/register'].includes(location.pathname);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ minHeight: '100vh', backgroundColor: '#fdfdfd' }}>
+      {!hideNavbar && (
+        <nav style={navStyle}>
+          <div style={navContent}>
+            <Link to="/order-now" style={logoStyle}>
+              <Coffee size={24} /> <span>Healthiffy Cafe</span>
+            </Link>
+            
+            <div style={linkGroup}>
+              {/* EVERYONE sees Menu & Profile */}
+              <Link style={linkStyle} to="/order-now"><Utensils size={18}/> Menu</Link>
+              <Link style={linkStyle} to="/profile"><User size={18}/> Profile</Link>
+
+              {/* ONLY CUSTOMERS see Plans */}
+              {role === 'customer' && (
+                <Link style={linkStyle} to="/plans"><CreditCard size={18}/> Plans</Link>
+              )}
+
+              {/* STAFF & ADMIN see Staff Orders */}
+              {(role === 'staff' || role === 'admin') && (
+                <>
+                  <div style={{ width: '1px', height: '20px', background: '#555', margin: '0 10px' }}></div>
+                  <Link style={adminLinkStyle} to="/staff">Staff</Link>
+                </>
+              )}
+
+              {/* ONLY ADMIN sees Admin Dashboard */}
+              {role === 'admin' && (
+                <Link style={adminLinkStyle} to="/admin"><LayoutDashboard size={18}/> Admin</Link>
+              )}
+              
+              <button onClick={() => { localStorage.clear(); window.location.href='/login'; }}>Logout</button>
+            </div>
+          </div>
+        </nav>
+      )}
+      <div style={{ paddingTop: hideNavbar ? '0px' : '20px' }}>
+        {children}
+      </div>
     </div>
   );
 }
+
+function App() {
+  return (
+    <Router>
+      <Layout>
+        <Routes>
+          {/* Landing page is now the root */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Customer only */}
+  <Route path="/order-now" element={<CustomerMenu />} />
+  <Route path="/plans" element={<ProtectedRoute allowedRoles={['customer']}><Plans /></ProtectedRoute>} />
+  
+  {/* Staff and Admin */}
+  <Route path="/staff" element={
+    <ProtectedRoute allowedRoles={['staff', 'admin']}>
+      <StaffOrders />
+    </ProtectedRoute>
+  } />
+
+  {/* Admin only */}
+  <Route path="/admin" element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminDashboard />
+    </ProtectedRoute>
+  } />
+
+          {/* Portal pages */}
+          
+          <Route path="/success" element={<OrderSuccess />} />
+          
+          <Route path="/profile" element={<Profile />} />
+         
+        </Routes>
+      </Layout>
+    </Router>
+  );
+}
+
+// ... keep your existing navStyle, navContent, etc. styles here ..
+
+// --- STYLES ---
+const navStyle = {
+  background: '#1a1a1a',
+  color: 'white',
+  padding: '0 20px',
+  position: 'sticky',
+  top: 0,
+  zIndex: 1000,
+  boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+};
+
+const navContent = {
+  maxWidth: '1200px',
+  margin: '0 auto',
+  height: '70px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center'
+};
+
+const logoStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  color: '#f39c12',
+  textDecoration: 'none',
+  fontSize: '1.4rem',
+  fontWeight: 'bold'
+};
+
+const linkGroup = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '20px'
+};
+
+const linkStyle = {
+  color: '#ddd',
+  textDecoration: 'none',
+  fontSize: '0.95rem',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  transition: '0.3s'
+};
+
+const adminLinkStyle = {
+  ...linkStyle,
+  color: '#888',
+  fontSize: '0.85rem'
+};
 
 export default App;
