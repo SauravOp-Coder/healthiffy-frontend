@@ -113,7 +113,7 @@ const CustomerMenu = () => {
 
       if (method === 'cash') {
         // Trigger UPI Deep Link
-        const upiId = ""; // Example UPI ID
+        const upiId = "sauravshinde992@oksbi"; // Example UPI ID
         const upiURL = `upi://pay?pa=${upiId}&pn=Healthiffy&am=${totals.cash}&tn=Order-${newOrderId.slice(-4)}&cu=INR`;
         
         setCurrentOrderId(newOrderId);
