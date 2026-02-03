@@ -11,8 +11,12 @@ const markerShadow = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.
 let DefaultIcon = L.icon({ iconUrl: markerIcon, shadowUrl: markerShadow, iconSize: [25, 41], iconAnchor: [12, 41] });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// --- FIXED: Consistent API URL ---
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const socket = io(API_URL);
+const socket = io(API_URL, {
+  transports: ['websocket', 'polling'],
+  withCredentials: true
+});
 
 const StaffOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -22,7 +26,8 @@ const StaffOrders = () => {
 
   const loadOrders = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/orders');
+      // FIXED: Use dynamic API_URL
+      const res = await axios.get(`${API_URL}/api/orders`);
       setOrders(res.data);
       
       const savedLocations = {};
@@ -36,7 +41,7 @@ const StaffOrders = () => {
         }
       });
       setCustomerLocations(prev => ({ ...savedLocations, ...prev }));
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Load Orders Error:", err); }
   };
 
   useEffect(() => {
@@ -56,16 +61,15 @@ const StaffOrders = () => {
       clearInterval(timeClock);
       socket.off('location-received');
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- NEW: Payment Verification Logic ---
   const verifyPayment = async (orderId, customerId) => {
     try {
-      // 1. Update DB to 'preparing'
-      await axios.patch(`http://localhost:5000/api/orders/${orderId}/status`, { status: 'preparing' });
+      // FIXED: Use dynamic API_URL
+      await axios.patch(`${API_URL}/api/orders/${orderId}/status`, { status: 'preparing' });
       
-      // 2. Send socket signal to Customer's phone to redirect them to success page
-      // Note: we send empty remainingCredits here; your backend can populate this if needed
+      // Send signal to Customer's phone to redirect them
       socket.emit('confirm-payment', { 
         orderId: orderId, 
         remainingCredits: "Updated" 
@@ -80,7 +84,8 @@ const StaffOrders = () => {
 
   const updateStatus = async (orderId, newStatus) => {
     try {
-      await axios.patch(`http://localhost:5000/api/orders/${orderId}/status`, { status: newStatus });
+      // FIXED: Use dynamic API_URL
+      await axios.patch(`${API_URL}/api/orders/${orderId}/status`, { status: newStatus });
       loadOrders();
     } catch (err) { alert("Failed to update status"); }
   };
@@ -136,7 +141,6 @@ const StaffOrders = () => {
               </div>
 
               <div style={cardAction}>
-                {/* SPECIAL VERIFY BUTTON FOR UPI */}
                 {order.status === 'pending' && order.paymentMethod === 'cash' ? (
                     <button onClick={() => verifyPayment(order._id, order.customer)} style={verifyBtn}>
                         <CheckCircle size={18} /> Verify UPI Payment
@@ -154,7 +158,6 @@ const StaffOrders = () => {
         })}
       </div>
 
-      {/* MODAL FOR MAP */}
       {activeTracking && customerLocations[activeTracking] && (
         <div style={modalOverlay}>
           <div style={modalContent}>
@@ -173,7 +176,7 @@ const StaffOrders = () => {
                 zoom={16} 
                 style={{height: '100%', width: '100%'}}
               >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{y}.png" />
                 <Marker position={[customerLocations[activeTracking].lat, customerLocations[activeTracking].lng]}>
                   <Popup>Customer Location</Popup>
                 </Marker>
@@ -183,14 +186,20 @@ const StaffOrders = () => {
           </div>
         </div>
       )}
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(39, 174, 96, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
+        }
+      `}</style>
     </div>
   );
 };
 
-// --- STYLES ---
+// ... (Your existing styles - no changes needed there)
 const methodTag = { fontSize: '0.7rem', fontWeight: 'bold', color: '#666', marginTop: '4px' };
 const verifyBtn = { width: '100%', padding: '16px', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer', backgroundColor: '#F39C12', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' };
-
 const trackBtn = { display: 'flex', alignItems: 'center', gap: '5px', border: 'none', padding: '6px 12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.75rem', transition: '0.2s' };
 const modalOverlay = { position: 'fixed', top:0, left:0, width:'100%', height:'100%', backgroundColor:'rgba(0,0,0,0.6)', display:'flex', justifyContent:'center', alignItems:'center', zIndex: 1000, backdropFilter: 'blur(4px)' };
 const modalContent = { backgroundColor:'#fff', padding:'24px', borderRadius:'24px', width:'90%', maxWidth:'650px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' };
@@ -200,7 +209,7 @@ const kdsHeader = { display: 'flex', justifyContent: 'space-between', alignItems
 const logoIcon = { background: '#27ae60', padding: '10px', borderRadius: '12px', display: 'flex' };
 const brandName = { margin: 0, fontSize: '1.8rem', color: '#1A1A1A', letterSpacing: '-0.5px' };
 const liveStatus = { margin: 0, fontSize: '0.85rem', color: '#666', display: 'flex', alignItems: 'center', gap: '5px' };
-const pulseDot = { width: '8px', height: '8px', background: '#27ae60', borderRadius: '50%', display: 'inline-block' };
+const pulseDot = { width: '8px', height: '8px', background: '#27ae60', borderRadius: '50%', display: 'inline-block', animation: 'pulse 2s infinite' };
 const timeDisplay = { display: 'flex', alignItems: 'center', gap: '10px', background: '#fff', padding: '10px 20px', borderRadius: '12px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' };
 const kdsGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '25px' };
 const orderCard = { backgroundColor: '#fff', borderRadius: '20px', padding: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.03)', border: '1px solid #E9ECEF', display: 'flex', flexDirection: 'column' };

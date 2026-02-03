@@ -3,6 +3,9 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 
+// --- FIXED: Use Environment Variable for Production ---
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -11,26 +14,27 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      // 1. Call the new login API
-      const res = await axios.post('http://localhost:5000/api/users/login', { email, password });
+      // FIXED: Swapped 'http://localhost:5000' for the dynamic API_BASE
+      const res = await axios.post(`${API_BASE}/api/users/login`, { email, password });
       
-      const userData = res.data; // This should now include { role, name, email, etc. }
+      const userData = res.data; 
       
-      // 2. Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('role', userData.role);
 
-      // 3. SMART REDIRECTION based on Role
+      // Role-based redirection
       if (userData.role === 'admin') {
-        navigate('/admin/dashboard');
+        navigate('/admin'); // Matches your App.js route
       } else if (userData.role === 'staff') {
-        navigate('/staff/kitchen');
+        navigate('/staff'); // Matches your App.js route
       } else {
-        navigate('/order-now'); // Standard customer portal
+        navigate('/order-now'); 
       }
 
     } catch (err) {
-      alert("Login failed. Please check your credentials.");
+      // Detailed error for debugging
+      console.error("Login Error:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Login failed. Please check your credentials.");
     }
   };
 

@@ -1,9 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom'; // Added Navigate
 import { Coffee, User, CreditCard, LayoutDashboard, Utensils } from 'lucide-react';
 
 // Page Imports
-import LandingPage from './pages/LandingPage'; // NEW
+import LandingPage from './pages/LandingPage';
 import CustomerMenu from './pages/CustomerMenu';
 import AdminDashboard from './pages/AdminDashboard';
 import StaffOrders from './pages/StaffOrders';
@@ -13,29 +13,31 @@ import Plans from './pages/Plans';
 import Profile from './pages/Profile';
 import Register from './pages/Register';
 
-
-
+// --- FIXED PROTECTED ROUTE ---
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const user = JSON.parse(localStorage.getItem('user'));
 
   if (!user) {
-    return <Link to="/login" />; // Not logged in? Go to login
+    // FIX: Using <Navigate /> instead of <Link /> ensures the user is actually redirected
+    return <Navigate to="/login" replace />; 
   }
 
   if (!allowedRoles.includes(user.role)) {
-    return <div style={{textAlign: 'center', marginTop: '50px'}}><h1>Access Denied</h1><p>You do not have permission to view this page.</p></div>;
+    return (
+      <div style={{textAlign: 'center', marginTop: '50px'}}>
+        <h1>Access Denied</h1>
+        <p>You do not have permission to view this page.</p>
+      </div>
+    );
   }
 
   return children;
 };
 
-// Create a small sub-component to handle conditional navbar
 function Layout({ children }) {
   const location = useLocation();
-  
-  // 1. Get user data from storage
   const user = JSON.parse(localStorage.getItem('user')); 
-  const role = user?.role; // 'customer', 'staff', or 'admin'
+  const role = user?.role;
 
   const hideNavbar = ['/', '/login', '/register'].includes(location.pathname);
 
@@ -49,16 +51,13 @@ function Layout({ children }) {
             </Link>
             
             <div style={linkGroup}>
-              {/* EVERYONE sees Menu & Profile */}
               <Link style={linkStyle} to="/order-now"><Utensils size={18}/> Menu</Link>
               <Link style={linkStyle} to="/profile"><User size={18}/> Profile</Link>
 
-              {/* ONLY CUSTOMERS see Plans */}
               {role === 'customer' && (
                 <Link style={linkStyle} to="/plans"><CreditCard size={18}/> Plans</Link>
               )}
 
-              {/* STAFF & ADMIN see Staff Orders */}
               {(role === 'staff' || role === 'admin') && (
                 <>
                   <div style={{ width: '1px', height: '20px', background: '#555', margin: '0 10px' }}></div>
@@ -66,12 +65,17 @@ function Layout({ children }) {
                 </>
               )}
 
-              {/* ONLY ADMIN sees Admin Dashboard */}
               {role === 'admin' && (
                 <Link style={adminLinkStyle} to="/admin"><LayoutDashboard size={18}/> Admin</Link>
               )}
               
-              <button onClick={() => { localStorage.clear(); window.location.href='/login'; }}>Logout</button>
+              {/* Added a bit of styling to the Logout button to match the theme */}
+              <button 
+                style={logoutBtnStyle} 
+                onClick={() => { localStorage.clear(); window.location.href='/login'; }}
+              >
+                Logout
+              </button>
             </div>
           </div>
         </nav>
@@ -88,93 +92,45 @@ function App() {
     <Router>
       <Layout>
         <Routes>
-          {/* Landing page is now the root */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Customer only */}
-  <Route path="/order-now" element={<CustomerMenu />} />
-  <Route path="/plans" element={<ProtectedRoute allowedRoles={['customer']}><Plans /></ProtectedRoute>} />
-  
-  {/* Staff and Admin */}
-  <Route path="/staff" element={
-    <ProtectedRoute allowedRoles={['staff', 'admin']}>
-      <StaffOrders />
-    </ProtectedRoute>
-  } />
-
-  {/* Admin only */}
-  <Route path="/admin" element={
-    <ProtectedRoute allowedRoles={['admin']}>
-      <AdminDashboard />
-    </ProtectedRoute>
-  } />
-
-          {/* Portal pages */}
+          <Route path="/order-now" element={<CustomerMenu />} />
           
+          <Route path="/plans" element={
+            <ProtectedRoute allowedRoles={['customer']}>
+              <Plans />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/staff" element={
+            <ProtectedRoute allowedRoles={['staff', 'admin']}>
+              <StaffOrders />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+
           <Route path="/success" element={<OrderSuccess />} />
-          
           <Route path="/profile" element={<Profile />} />
-         
         </Routes>
       </Layout>
     </Router>
   );
 }
 
-// ... keep your existing navStyle, navContent, etc. styles here ..
-
 // --- STYLES ---
-const navStyle = {
-  background: '#1a1a1a',
-  color: 'white',
-  padding: '0 20px',
-  position: 'sticky',
-  top: 0,
-  zIndex: 1000,
-  boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-};
-
-const navContent = {
-  maxWidth: '1200px',
-  margin: '0 auto',
-  height: '70px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center'
-};
-
-const logoStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  color: '#f39c12',
-  textDecoration: 'none',
-  fontSize: '1.4rem',
-  fontWeight: 'bold'
-};
-
-const linkGroup = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '20px'
-};
-
-const linkStyle = {
-  color: '#ddd',
-  textDecoration: 'none',
-  fontSize: '0.95rem',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  transition: '0.3s'
-};
-
-const adminLinkStyle = {
-  ...linkStyle,
-  color: '#888',
-  fontSize: '0.85rem'
-};
+const navStyle = { background: '#1a1a1a', color: 'white', padding: '0 20px', position: 'sticky', top: 0, zIndex: 1000, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' };
+const navContent = { maxWidth: '1200px', margin: '0 auto', height: '70px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const logoStyle = { display: 'flex', alignItems: 'center', gap: '10px', color: '#f39c12', textDecoration: 'none', fontSize: '1.4rem', fontWeight: 'bold' };
+const linkGroup = { display: 'flex', alignItems: 'center', gap: '20px' };
+const linkStyle = { color: '#ddd', textDecoration: 'none', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.3s' };
+const adminLinkStyle = { ...linkStyle, color: '#888', fontSize: '0.85rem' };
+const logoutBtnStyle = { background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' };
 
 export default App;

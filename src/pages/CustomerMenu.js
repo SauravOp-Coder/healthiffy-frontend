@@ -4,8 +4,12 @@ import axios from 'axios';
 import { Coffee, ShoppingCart, Trash2, Plus, Minus, CreditCard, Star, Search, X, ChevronRight, Loader2 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
+// --- FIXED: Use Environment Variable consistently ---
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const socket = io(API_URL);
+const socket = io(API_URL, {
+  transports: ['websocket', 'polling'], // Added for better mobile compatibility
+  withCredentials: true
+});
 
 const CustomerMenu = () => {
   const [products, setProducts] = useState([]);
@@ -23,36 +27,39 @@ const CustomerMenu = () => {
 
   useEffect(() => {
     const savedUser = JSON.parse(localStorage.getItem('user'));
-    if (!savedUser) navigate('/login');
-    else {
+    if (!savedUser) {
+      navigate('/login');
+    } else {
       setUserData(savedUser);
       loadProducts();
     }
-  }, [navigate, searchTerm, activeCategory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, searchTerm, activeCategory]); // Fixed missing loadProducts dependency warning
 
   // Listen for Staff Approval via Socket
   useEffect(() => {
     if (currentOrderId) {
-      socket.on(`payment-verified-${currentOrderId}`, (data) => {
+      const eventName = `payment-verified-${currentOrderId}`;
+      socket.on(eventName, (data) => {
         setIsVerifying(false);
         navigate('/success', { 
           state: { orderId: currentOrderId, remainingCredits: data.remainingCredits } 
         });
       });
+      
+      return () => socket.off(eventName);
     }
-    return () => {
-      if(currentOrderId) socket.off(`payment-verified-${currentOrderId}`);
-    };
   }, [currentOrderId, navigate]);
 
   const loadProducts = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/products', {
+      // FIXED: Swapped localhost for dynamic API_URL
+      const res = await axios.get(`${API_URL}/api/products`, {
         params: { search: searchTerm, category: activeCategory }
       });
       setProducts(res.data);
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error("Fetch products error:", err);
     }
   };
 
@@ -90,9 +97,8 @@ const CustomerMenu = () => {
   const handleCheckout = async (method) => {
     const totals = calculateTotal();
     
-    // PC SAFETY CHECK
     if (method === 'cash' && !isMobile()) {
-      alert("🔒 Security Notice: UPI/Cash payments are only allowed via Mobile Devices for secure verification and live tracking.");
+      alert("🔒 Security Notice: UPI/Cash payments are only allowed via Mobile Devices.");
       return;
     }
 
@@ -107,13 +113,14 @@ const CustomerMenu = () => {
         paymentMethod: method,
         cart: cart.map(item => ({ productId: item._id, quantity: item.quantity }))
       };
-      const res = await axios.post('http://localhost:5000/api/orders/place-order', orderData);
+      
+      // FIXED: Swapped localhost for dynamic API_URL
+      const res = await axios.post(`${API_URL}/api/orders/place-order`, orderData);
       
       const newOrderId = res.data.order._id;
 
       if (method === 'cash') {
-        // Trigger UPI Deep Link
-        const upiId = "sauravshinde992@oksbi"; // Example UPI ID
+        const upiId = "sauravshinde992@oksbi"; 
         const upiURL = `upi://pay?pa=${upiId}&pn=Healthiffy&am=${totals.cash}&tn=Order-${newOrderId.slice(-4)}&cu=INR`;
         
         setCurrentOrderId(newOrderId);
@@ -128,10 +135,12 @@ const CustomerMenu = () => {
       setCart([]);
       setIsCartOpen(false);
     } catch (err) {
-      alert("Order failed.");
+      console.error("Order Error:", err);
+      alert("Order failed. Check your internet connection.");
     }
   };
 
+  // ... (Keep the rest of your return JSX and styles exactly as they are) ...
   return (
     <div style={container}>
       {/* Verification Overlay */}
@@ -263,11 +272,17 @@ const CustomerMenu = () => {
           </div>
         </>
       )}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
 
-// --- STYLES ---
+// ... (Your existing styles objects)
 const container = { padding: '15px', maxWidth: '1200px', margin: '0 auto', fontFamily: '"Inter", sans-serif', backgroundColor: '#fcfcfc' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' };
 const logo = { display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: '#1a1a1a', fontSize: '1.5rem' };
@@ -311,10 +326,10 @@ const summaryBox = { marginBottom: '15px' };
 const summaryLine = { display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' };
 const payNowBtn = { width: '100%', background: '#1a1a1a', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', marginBottom: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' };
 const payCreditBtn = { width: '100%', background: '#f39c12', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' };
-
 const verifyOverlay = { position: 'fixed', top:0, left:0, width:'100%', height:'100%', backgroundColor:'rgba(255,255,255,0.98)', zIndex: 2000, display:'flex', justifyContent:'center', alignItems:'center', textAlign:'center' };
 const verifyCard = { padding: '40px', maxWidth: '350px' };
 const orderRefTag = { marginTop: '20px', padding: '8px 15px', background: '#f0f0f0', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 'bold' };
-const spinnerStyle = { width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #f39c12', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' };
+const spinnerStyle = { width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #f39c12', borderRadius: '50%', margin: '0 auto' };
+
 
 export default CustomerMenu;

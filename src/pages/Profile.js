@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // Import for logout navigation
+import { useNavigate } from 'react-router-dom';
 import { User, MapPin, Mail, History, Star, Save, Calendar, Package, LogOut } from 'lucide-react';
+
+// --- FIXED: Use Environment Variable ---
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -15,12 +18,15 @@ const Profile = () => {
     if (savedUser) {
       fetchUserData(savedUser._id);
       fetchUserOrders(savedUser._id);
+    } else {
+      navigate('/login');
     }
-  }, []);
+  }, [navigate]);
 
   const fetchUserData = async (id) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/users/${id}`);
+      // FIXED: Swapped localhost for dynamic API_URL
+      const res = await axios.get(`${API_URL}/api/users/${id}`);
       setUser(res.data);
       setFormData({ name: res.data.name, email: res.data.email, address: res.data.address });
     } catch (err) {
@@ -30,7 +36,8 @@ const Profile = () => {
 
   const fetchUserOrders = async (id) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/orders/user/${id}`);
+      // FIXED: Swapped localhost for dynamic API_URL
+      const res = await axios.get(`${API_URL}/api/orders/user/${id}`);
       setOrders(res.data);
     } catch (err) {
       console.error("Error fetching orders", err);
@@ -39,23 +46,24 @@ const Profile = () => {
 
   const handleUpdate = async () => {
     try {
-      const res = await axios.patch(`http://localhost:5000/api/users/${user._id}`, formData);
+      // FIXED: Swapped localhost for dynamic API_URL
+      const res = await axios.patch(`${API_URL}/api/users/${user._id}`, formData);
       setUser(res.data);
       localStorage.setItem('user', JSON.stringify(res.data));
       setEditMode(false);
-      alert("Profile updated!");
+      alert("Profile updated successfully!");
     } catch (err) {
-      alert("Update failed.");
+      alert("Update failed. Please try again.");
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    navigate('/login'); // Redirect to login page
+    navigate('/login');
   };
 
-  if (!user) return <div style={{textAlign: 'center', marginTop: '50px'}}>Loading Profile...</div>;
+  if (!user) return <div style={loadingStyle}>Gathering your data...</div>;
 
   return (
     <div style={container}>
@@ -65,13 +73,13 @@ const Profile = () => {
           <div style={avatar}>{user.name ? user.name[0] : 'U'}</div>
           <div style={{ flex: 1 }}>
             <h2 style={{margin: 0}}>{user.name}</h2>
-            <p style={{ color: '#f39c12', fontWeight: 'bold', margin: '5px 0' }}>
-                <Star size={16} fill="#f39c12" /> {user.creditBalance} Credits
+            <p style={{ color: '#f39c12', fontWeight: 'bold', margin: '5px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Star size={16} fill="#f39c12" /> {user.creditBalance} Credits Available
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={buttonGroup}>
             <button onClick={() => setEditMode(!editMode)} style={editBtn}>
-              {editMode ? 'Cancel' : 'Edit Profile'}
+              {editMode ? 'Cancel' : 'Edit'}
             </button>
             <button onClick={handleLogout} style={logoutBtn}>
               <LogOut size={16} /> Logout
@@ -83,7 +91,7 @@ const Profile = () => {
           <div style={formGrid}>
             <input style={input} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Name" />
             <input style={input} value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="Email" />
-            <textarea style={{...input, gridColumn: 'span 2', minHeight: '80px'}} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Delivery Address" />
+            <textarea style={{...input, gridColumn: 'span 2', minHeight: '80px'}} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Full Delivery Address" />
             <button onClick={handleUpdate} style={saveBtn}><Save size={18}/> Save Changes</button>
           </div>
         ) : (
@@ -96,44 +104,40 @@ const Profile = () => {
 
       {/* Order History */}
       <section style={{ marginTop: '40px' }}>
-        <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <History size={22} /> Your Order History
+        <h3 style={sectionTitle}>
+          <History size={22} /> Recent Orders
         </h3>
         
         {orders.length === 0 ? (
           <div style={emptyHistory}>
             <Package size={40} color="#ccc" />
-            <p>No orders found.</p>
+            <p>You haven't placed any orders yet.</p>
           </div>
         ) : (
-          orders.map(order => (
+          orders.slice().reverse().map(order => (
             <div key={order._id} style={orderContainer}>
               <div style={orderTopBar}>
-                <span><b>Order ID:</b> #{order._id.slice(-6).toUpperCase()}</span>
+                <span><b>Ref:</b> #{order._id.slice(-6).toUpperCase()}</span>
                 <span style={statusTag(order.status)}>{order.status}</span>
               </div>
 
               <div style={itemsList}>
                 {order.items && order.items.map((item, idx) => (
                   <div key={idx} style={itemDetailRow}>
-                    <div style={{ flex: 1 }}>
-                      <div style={itemPrimaryText}>
-                        {item.product?.name || "Deleted Item"} 
-                        <span style={qtyBadge}>x{item.quantity}</span>
-                      </div>
+                    <div style={itemPrimaryText}>
+                      {item.productId?.name || "Product"} 
+                      <span style={qtyBadge}>x{item.quantity}</span>
                     </div>
                   </div>
                 ))}
               </div>
 
               <div style={orderFooter}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#888', fontSize: '0.85rem' }}>
+                <div style={dateStyle}>
                     <Calendar size={14} /> {new Date(order.createdAt).toLocaleDateString()}
                 </div>
                 <div style={totalText}>
-                  Total Paid: <span>
-                    {order.paymentMethod === 'credits' ? `${order.totalCredits} ⭐️` : `₹${order.totalAmount}`}
-                  </span>
+                  {order.paymentMethod === 'credits' ? `${order.totalCredits} ⭐️` : `₹${order.totalAmount}`}
                 </div>
               </div>
             </div>
@@ -145,29 +149,48 @@ const Profile = () => {
 };
 
 // --- STYLES ---
-const container = { padding: '40px 20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif' };
-const card = { background: 'white', padding: '30px', borderRadius: '20px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', border: '1px solid #f0f0f0' };
-const profileHeader = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '25px' };
-const avatar = { width: '70px', height: '70px', borderRadius: '50%', background: '#2c3e50', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: 'bold' };
+const container = { padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: '"Inter", sans-serif' };
+const card = { background: 'white', padding: '25px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f0f0f0' };
+const profileHeader = { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px', flexWrap: 'wrap' };
+const avatar = { width: '60px', height: '60px', borderRadius: '50%', background: '#1a1a1a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' };
+const buttonGroup = { display: 'flex', gap: '8px' };
+const editBtn = { background: '#f5f5f5', border: '1px solid #eee', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600' };
+const logoutBtn = { background: '#fee2e2', border: 'none', color: '#dc2626', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' };
+const sectionTitle = { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', fontSize: '1.2rem' };
+const loadingStyle = { textAlign: 'center', marginTop: '100px', color: '#666' };
+const dateStyle = { display: 'flex', alignItems: 'center', gap: '5px', color: '#888', fontSize: '0.85rem' };
 
-const editBtn = { background: '#fff', border: '1px solid #ddd', padding: '8px 15px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600' };
-const logoutBtn = { background: '#fee2e2', border: '1px solid #fecaca', color: '#dc2626', padding: '8px 15px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' };
+// Status Colors Logic
+const statusTag = (s) => {
+  let bg = '#f39c12'; // Default: Pending/Preparing
+  if (s === 'delivered' || s === 'ready') bg = '#27ae60';
+  if (s === 'cancelled') bg = '#e74c3c';
+  
+  return { 
+    fontSize: '0.7rem', 
+    textTransform: 'uppercase', 
+    padding: '4px 10px', 
+    borderRadius: '20px', 
+    background: bg, 
+    color: 'white', 
+    fontWeight: 'bold' 
+  };
+};
 
+// ... (Rest of your styles are consistent)
 const formGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' };
 const input = { padding: '12px', borderRadius: '8px', border: '1px solid #eee', background: '#f9f9f9', fontSize: '0.95rem' };
-const saveBtn = { gridColumn: 'span 2', background: '#27ae60', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '8px' };
+const saveBtn = { gridColumn: 'span 2', background: '#1a1a1a', color: 'white', border: 'none', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '8px' };
 const infoDisplay = { borderTop: '1px solid #f0f0f0', paddingTop: '20px' };
 const infoRow = { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', color: '#444' };
-
-const orderContainer = { background: 'white', borderRadius: '15px', border: '1px solid #eee', marginBottom: '20px', overflow: 'hidden' };
-const orderTopBar = { padding: '12px 20px', background: '#fcfcfc', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' };
+const orderContainer = { background: 'white', borderRadius: '15px', border: '1px solid #eee', marginBottom: '15px', overflow: 'hidden' };
+const orderTopBar = { padding: '12px 20px', background: '#fcfcfc', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' };
 const itemsList = { padding: '15px 20px' };
-const itemDetailRow = { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '8px' };
+const itemDetailRow = { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '5px' };
 const itemPrimaryText = { fontWeight: '600', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '8px' };
-const qtyBadge = { background: '#f0f0f0', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', color: '#555' };
+const qtyBadge = { background: '#f0f0f0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', color: '#555' };
 const orderFooter = { padding: '12px 20px', background: '#fcfcfc', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 const totalText = { fontWeight: 'bold', fontSize: '1rem' };
-const statusTag = (s) => ({ fontSize: '0.7rem', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '20px', background: s === 'completed' ? '#27ae60' : '#f39c12', color: 'white', fontWeight: 'bold' });
 const emptyHistory = { textAlign: 'center', padding: '50px', background: '#f9f9f9', borderRadius: '20px', color: '#999' };
 
 export default Profile;
