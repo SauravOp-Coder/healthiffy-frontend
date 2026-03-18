@@ -94,51 +94,88 @@ const CustomerMenu = () => {
     }), { cash: 0, credits: 0 });
   };
 
-  const handleCheckout = async (method) => {
+ const handleCheckout = async (method) => {
     const totals = calculateTotal();
     
+    // 1. Validation
     if (method === 'cash' && !isMobile()) {
-      alert("🔒 Security Notice: UPI/Cash payments are only allowed via Mobile Devices.");
-      return;
+        alert("🔒 For security, UPI payments must be completed on a mobile device.");
+        return;
     }
 
     if (method === 'credits' && userData.creditBalance < totals.credits) {
-      alert("Insufficient Credits!");
-      return;
+        alert("Insufficient Credits!");
+        return;
     }
 
     try {
-      const orderData = {
-        userId: userData._id,
-        paymentMethod: method,
-        cart: cart.map(item => ({ productId: item._id, quantity: item.quantity }))
-      };
-      
-      // FIXED: Swapped localhost for dynamic API_URL
-      const res = await axios.post(`${API_URL}/api/orders/place-order`, orderData);
-      
-      const newOrderId = res.data.order._id;
-
-      if (method === 'cash') {
-        const upiId = "8530912184@axl"; 
-        const upiURL = `upi://pay?pa=${upiId}&pn=Healthiffy&am=${totals.cash}&tn=Order-${newOrderId.slice(-4)}&cu=INR`;
+        const orderData = {
+            userId: userData._id,
+            paymentMethod: method,
+            cart: cart.map(item => ({ productId: item._id, quantity: item.quantity })),
+            totalAmount: method === 'cash' ? totals.cash : totals.credits
+        };
         
-        setCurrentOrderId(newOrderId);
-        setIsVerifying(true);
-        window.location.href = upiURL;
-      } else {
-        navigate('/success', { 
-          state: { orderId: newOrderId, remainingCredits: res.data.remainingCredits, method: method } 
-        });
-      }
+        // 2. Create Order in Backend first
+        const res = await axios.post(`${API_URL}/api/orders/place-order`, orderData);
+        const newOrderId = res.data.order._id;
+        const shortId = newOrderId.slice(-4);
 
-      setCart([]);
-      setIsCartOpen(false);
+        if (method === 'cash') {
+            // 3. Construct Secure UPI URL
+            const upiId = "8530912184@axl"; 
+            const businessName = "Healthiffy Cafe";
+            const upiURL = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(businessName)}&am=${totals.cash}&tn=Order_${shortId}&cu=INR`;
+            
+            setCurrentOrderId(newOrderId);
+            setIsVerifying(true);
+
+            // 4. Smooth Transition Delay
+            setTimeout(() => {
+                window.location.href = upiURL;
+            }, 1500);
+
+        } else {
+            // Credit Payment (Instant)
+            navigate('/success', { 
+                state: { orderId: newOrderId, remainingCredits: res.data.remainingCredits, method: method } 
+            });
+        }
+
+        setCart([]);
+        setIsCartOpen(false);
     } catch (err) {
-      console.error("Order Error:", err);
-      alert("Order failed. Check your internet connection.");
+        console.error("Order Error:", err);
+        alert("System busy. Please try again.");
     }
-  };
+};
+
+const VerificationOverlay = () => (
+    <div style={verifyOverlay}>
+        <div style={verifyCard}>
+            <div style={loaderWrapper}>
+                <Loader2 size={48} className="spin-icon" color="#27ae60" />
+            </div>
+            <h2 style={verifyTitle}>Awaiting Confirmation</h2>
+            <p style={verifySubtitle}>
+                Order <b>#{currentOrderId?.slice(-4)}</b> placed. <br/>
+                Once you complete the UPI payment, the kitchen will accept your order automatically.
+            </p>
+            
+            <div style={upiDetailsBox}>
+                <span style={label}>Paying to:</span>
+                <span style={value}>8530912184@axl</span>
+            </div>
+
+            <button 
+                onClick={() => setIsVerifying(false)} 
+                style={backBtn}
+            >
+                Wait on Menu
+            </button>
+        </div>
+    </div>
+);
 
   // ... (Keep the rest of your return JSX and styles exactly as they are) ...
   return (
@@ -272,13 +309,19 @@ const CustomerMenu = () => {
           </div>
         </>
       )}
+      
       <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .spin-icon {
+        animation: spin 2s linear infinite;
+    }
+`}</style>
     </div>
+
+    
   );
 };
 
