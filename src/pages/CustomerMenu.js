@@ -22,7 +22,6 @@ const CustomerMenu = () => {
   // Payment & Verification States
   const [showQR, setShowQR] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [currentOrderId, setCurrentOrderId] = useState(null);
   
   const navigate = useNavigate();
 
@@ -35,18 +34,20 @@ const CustomerMenu = () => {
     }
   }, [searchTerm, activeCategory]);
 
+  // LISTEN FOR STAFF APPROVAL
   useEffect(() => {
-    if (currentOrderId) {
-      const eventName = `payment-verified-${currentOrderId}`;
+    if (userData?._id) {
+      const eventName = `payment-verified-${userData._id}`;
       socket.on(eventName, (data) => {
         setIsVerifying(false);
+        setCart([]); // Clear cart ONLY after staff confirms
         navigate('/success', { 
-          state: { orderId: currentOrderId, remainingCredits: data.remainingCredits } 
+          state: { orderId: data.orderId, remainingCredits: data.remainingCredits } 
         });
       });
       return () => socket.off(eventName);
     }
-  }, [currentOrderId, navigate]);
+  }, [userData, navigate]);
 
   const loadProducts = async () => {
     try {
@@ -76,7 +77,6 @@ const CustomerMenu = () => {
 
   const removeFromCart = (id) => setCart(cart.filter(item => item._id !== id));
 
-  // --- CORE CHECKOUT LOGIC ---
   const handleCheckout = async (method) => {
     const totals = calculateTotal();
 
@@ -85,47 +85,52 @@ const CustomerMenu = () => {
             alert("Insufficient Credit Balance!");
             return;
         }
-        // Direct placement for credits
-        confirmAndPlaceOrder('credits');
+        processCreditOrder();
     } else {
-        // Show QR first for Cash/UPI
         setShowQR(true);
         setIsCartOpen(false);
     }
   };
 
-  const confirmAndPlaceOrder = async (method) => {
+  // STEP 1: USER CLAIMS PAYMENT (No Database Save Yet)
+  const claimPayment = () => {
+    const totals = calculateTotal();
+    
+    // Send request to Staff Dashboard via Socket
+    socket.emit('claim-payment', {
+        userId: userData._id,
+        userName: userData.name,
+        cart: cart, // Sending items so staff can see what's being ordered
+        total: totals.cash,
+        method: 'cash'
+    });
+
+    setShowQR(false);
+    setIsVerifying(true);
+  };
+
+  // DIRECT PLACEMENT FOR CREDITS (Auto-verified)
+  const processCreditOrder = async () => {
     const totals = calculateTotal();
     try {
         const orderData = {
             userId: userData._id,
-            paymentMethod: method,
+            paymentMethod: 'credits',
             cart: cart.map(item => ({ productId: item._id, quantity: item.quantity })),
-            totalAmount: method === 'cash' ? totals.cash : totals.credits
+            totalAmount: totals.credits
         };
-        
         const res = await axios.post(`${API_URL}/api/orders/place-order`, orderData);
-        const newId = res.data.order._id;
-        
-        if (method === 'cash') {
-            setCurrentOrderId(newId);
-            setShowQR(false);
-            setIsVerifying(true);
-        } else {
-            // Success for Credits
-            navigate('/success', { 
-                state: { orderId: newId, remainingCredits: res.data.remainingCredits } 
-            });
-        }
         setCart([]);
+        navigate('/success', { 
+            state: { orderId: res.data.order._id, remainingCredits: res.data.remainingCredits } 
+        });
     } catch (err) {
-        alert("Order failed. Please check your connection.");
+        alert("Order failed. Please try again.");
     }
   };
 
   const categories = ["All","COFFEE", "SALAD BOWLS", "OTHER BOWLS", "FRUIT BOWLS", "SANDWICH","CHIA PUDDING","ROASTED MAKHANA","OATS BOWL","SMOOTHIES","COFFEE & TEA","HEALTHY GREEN TEAS","FRESH FRUITS & JUICE","HOT BEVERAGE SHOTS"];
 
-  // --- QR OVERLAY COMPONENT ---
   const QRPrePayOverlay = () => {
     const totals = calculateTotal();
     const upiId = "atharvashetage@oksbi";
@@ -144,7 +149,7 @@ const CustomerMenu = () => {
                         <li>Open GPay/PhonePe > Scan > Upload from Gallery.</li>
                     </ul>
                 </div>
-                <button onClick={() => confirmAndPlaceOrder('cash')} style={confirmPaidBtn}>
+                <button onClick={claimPayment} style={confirmPaidBtn}>
                     <CheckCircle size={18} /> I Have Paid
                 </button>
                 <button onClick={() => setShowQR(false)} style={backBtnStyle}>Cancel</button>
@@ -160,18 +165,17 @@ const CustomerMenu = () => {
         <div style={verifyOverlay}>
           <div style={verifyCard}>
             <Loader2 size={50} className="spin-icon" color="#f39c12" />
-            <h2 style={{marginTop: '20px'}}>Verifying...</h2>
-            <p style={{color: '#666'}}>Order sent! Please wait for staff to confirm payment.</p>
-            <div style={orderRefTag}>Order Ref: #{currentOrderId?.slice(-4)}</div>
+            <h2 style={{marginTop: '20px'}}>Waiting for Staff...</h2>
+            <p style={{color: '#666'}}>We've notified the kitchen. Your order will appear in history once staff verifies your payment.</p>
+            <div style={orderRefTag}>User: {userData?.name}</div>
           </div>
         </div>
       )}
 
-      {/* Header */}
       <header style={headerStyle}>
         <div>
           <h1 style={logo}><Coffee size={24} /> Healthiffy</h1>
-          <p style={welcomeText}>Balance: <b>{userData?.creditBalance} ⭐️</b></p>
+          <p style={welcomeText}>Credits: <b>{userData?.creditBalance} ⭐️</b></p>
         </div>
         <button onClick={() => setIsCartOpen(true)} style={cartBtn}>
             <ShoppingCart size={20} />
@@ -179,14 +183,12 @@ const CustomerMenu = () => {
         </button>
       </header>
 
-      {/* Category List */}
       <div style={categoryRow}>
         {categories.map(cat => (
           <button key={cat} onClick={() => setActiveCategory(cat)} style={activeCategory === cat ? activeTab : tabBtn}>{cat}</button>
         ))}
       </div>
 
-      {/* Grid */}
       <div style={grid}>
         {products.map(item => (
           <div key={item._id} style={card}>
@@ -203,7 +205,6 @@ const CustomerMenu = () => {
         ))}
       </div>
 
-      {/* Sidebar Cart */}
       {isCartOpen && (
         <>
           <div style={overlay} onClick={() => setIsCartOpen(false)} />
@@ -232,7 +233,7 @@ const CustomerMenu = () => {
   );
 };
 
-// --- Styles ---
+// Styles remain unchanged to maintain your UI
 const container = { padding: '15px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' };
 const logo = { display: 'flex', alignItems: 'center', gap: '8px', margin: 0, fontSize: '1.2rem' };
