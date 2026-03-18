@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
+import api from '../api'; // Import the helper we just made
 
 // --- FIXED: Use Environment Variable for Production ---
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -11,32 +12,23 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      // FIXED: Swapped 'http://localhost:5000' for the dynamic API_BASE
-      const res = await axios.post(`${API_BASE}/api/users/login`, { email, password });
-      
-      const userData = res.data; 
-      
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('role', userData.role);
 
-      // Role-based redirection
-      if (userData.role === 'admin') {
-        navigate('/admin'); // Matches your App.js route
-      } else if (userData.role === 'staff') {
-        navigate('/staff'); // Matches your App.js route
-      } else {
-        navigate('/order-now'); 
-      }
 
-    } catch (err) {
-      // Detailed error for debugging
-      console.error("Login Error:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Login failed. Please check your credentials.");
+const handleLogin = async (e) => {
+  e.preventDefault();
+  try {
+    // No need for full URL, just the endpoint
+    const response = await api.post('/users/login', { email, password });
+    
+    if (response.data) {
+      localStorage.setItem('user', JSON.stringify(response.data));
+      window.location.href = '/order-now';
     }
-  };
+  } catch (error) {
+    console.error("Login failed:", error.response?.data?.message || error.message);
+    alert("Login failed! Check console for HTTPS/CORS errors.");
+  }
+};
 
   return (
     <div style={loginContainer}>
