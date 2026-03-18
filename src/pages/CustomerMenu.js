@@ -374,5 +374,61 @@ const verifyCard = { padding: '40px', maxWidth: '350px' };
 const orderRefTag = { marginTop: '20px', padding: '8px 15px', background: '#f0f0f0', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 'bold' };
 const spinnerStyle = { width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #f39c12', borderRadius: '50%', margin: '0 auto' };
 
+// --- ADD THESE TO THE BOTTOM OF CustomerMenu.js STYLES ---
 
+const loaderWrapper = { 
+  display: 'flex', 
+  flexDirection: 'column', 
+  alignItems: 'center', 
+  gap: '15px' 
+};
+
+const verifyTitle = { 
+  fontSize: '1.5rem', 
+  fontWeight: '800', 
+  color: '#1a1a1a', 
+  margin: '0 0 10px 0' 
+};
+
+const verifySubtitle = { 
+  fontSize: '0.9rem', 
+  color: '#666', 
+  marginBottom: '20px' 
+};
+
+const upiDetailsBox = { 
+  background: '#f8fafc', 
+  padding: '15px', 
+  borderRadius: '12px', 
+  border: '1px solid #e2e8f0', 
+  textAlign: 'left',
+  marginBottom: '20px'
+};
+
+const label = { 
+  fontSize: '0.75rem', 
+  color: '#94a3b8', 
+  textTransform: 'uppercase', 
+  fontWeight: '700', 
+  display: 'block', 
+  marginBottom: '2px' 
+};
+
+const value = { 
+  fontSize: '1rem', 
+  color: '#1e293b', 
+  fontWeight: '600', 
+  wordBreak: 'break-all' 
+};
+
+const backBtn = { 
+  background: 'none', 
+  border: '1px solid #e2e8f0', 
+  padding: '10px 20px', 
+  borderRadius: '10px', 
+  cursor: 'pointer', 
+  fontWeight: '600', 
+  color: '#64748b',
+  fontSize: '0.9rem'
+};
 export default CustomerMenu;
