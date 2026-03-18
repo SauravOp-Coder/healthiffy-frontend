@@ -105,7 +105,7 @@ const CustomerMenu = () => {
             setIsVerifying(true);
 
             // Attempt auto-open
-            const upiURL = `upi://pay?pa=8530912184@axl&pn=Healthiffy&am=${totals.cash}&tn=Order_${newOrderId.slice(-4)}&cu=INR`;
+            const upiURL = `upi://pay?pa=8530912184@nyes&pn=Healthiffy&am=${totals.cash}&tn=Order_${newOrderId.slice(-4)}&cu=INR`;
             
             // On mobile, try to open the app
             if (isMobile()) {
