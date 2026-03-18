@@ -2,33 +2,38 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
-import api from '../api'; // Import the helper we just made
-
-// --- FIXED: Use Environment Variable for Production ---
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      // 1. Call the new login API
+    // Replace 'your-backend' with your actual Render service name
+const res = await axios.post('https://healthiffy-backend.onrender.com/api/users/login', { email, password });
+      
+      const userData = res.data; // This should now include { role, name, email, etc. }
+      
+      // 2. Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('role', userData.role);
 
+      // 3. SMART REDIRECTION based on Role
+      if (userData.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (userData.role === 'staff') {
+        navigate('/staff/kitchen');
+      } else {
+        navigate('/order-now'); // Standard customer portal
+      }
 
-const handleLogin = async (e) => {
-  e.preventDefault();
-  try {
-    // No need for full URL, just the endpoint
-    const response = await api.post('/users/login', { email, password });
-    
-    if (response.data) {
-      localStorage.setItem('user', JSON.stringify(response.data));
-      window.location.href = '/order-now';
+    } catch (err) {
+      alert("Login failed. Please check your credentials.");
     }
-  } catch (error) {
-    console.error("Login failed:", error.response?.data?.message || error.message);
-    alert("Login failed! Check console for HTTPS/CORS errors.");
-  }
-};
+  };
 
   return (
     <div style={loginContainer}>
