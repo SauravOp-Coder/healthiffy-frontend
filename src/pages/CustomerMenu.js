@@ -120,7 +120,7 @@ const CustomerMenu = () => {
       const newOrderId = res.data.order._id;
 
       if (method === 'cash') {
-        const upiId = "sauravshinde992@oksbi"; 
+        const upiId = "8530912184@axl"; 
         const upiURL = `upi://pay?pa=${upiId}&pn=Healthiffy&am=${totals.cash}&tn=Order-${newOrderId.slice(-4)}&cu=INR`;
         
         setCurrentOrderId(newOrderId);

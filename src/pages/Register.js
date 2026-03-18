@@ -11,7 +11,7 @@ const Register = () => {
     e.preventDefault();
     try {
      // Replace 'your-backend' with your actual Render service name
-await axios.post('https://your-backend.onrender.com/api/users/register', formData);
+await axios.post('https://healthiffy-backend.onrender.com/api/users/register', formData);
       alert("Registration Successful! Please Login.");
       navigate('/login');
     } catch (err) {
