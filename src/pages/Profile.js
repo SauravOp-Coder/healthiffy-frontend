@@ -176,21 +176,127 @@ const statusTag = (s) => {
     fontWeight: 'bold' 
   };
 };
+// --- RESPONSIVE PROFILE STYLES ---
 
-// ... (Rest of your styles are consistent)
-const formGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' };
-const input = { padding: '12px', borderRadius: '8px', border: '1px solid #eee', background: '#f9f9f9', fontSize: '0.95rem' };
-const saveBtn = { gridColumn: 'span 2', background: '#1a1a1a', color: 'white', border: 'none', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '8px' };
-const infoDisplay = { borderTop: '1px solid #f0f0f0', paddingTop: '20px' };
-const infoRow = { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', color: '#444' };
-const orderContainer = { background: 'white', borderRadius: '15px', border: '1px solid #eee', marginBottom: '15px', overflow: 'hidden' };
-const orderTopBar = { padding: '12px 20px', background: '#fcfcfc', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' };
-const itemsList = { padding: '15px 20px' };
-const itemDetailRow = { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '5px' };
-const itemPrimaryText = { fontWeight: '600', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '8px' };
-const qtyBadge = { background: '#f0f0f0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', color: '#555' };
-const orderFooter = { padding: '12px 20px', background: '#fcfcfc', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const totalText = { fontWeight: 'bold', fontSize: '1rem' };
-const emptyHistory = { textAlign: 'center', padding: '50px', background: '#f9f9f9', borderRadius: '20px', color: '#999' };
+const container = { 
+  padding: '20px 15px', // Reduced from 40px for mobile
+  maxWidth: '800px', 
+  margin: '0 auto', 
+  fontFamily: 'sans-serif',
+  boxSizing: 'border-box'
+};
 
+const card = { 
+  background: 'white', 
+  padding: '20px', // Reduced from 30px
+  borderRadius: '20px', 
+  boxShadow: '0 10px 25px rgba(0,0,0,0.05)', 
+  border: '1px solid #f0f0f0',
+  boxSizing: 'border-box' 
+};
+
+const profileHeader = { 
+  display: 'flex', 
+  flexDirection: 'column', // Stack avatar and buttons on mobile
+  alignItems: 'center', 
+  gap: '15px', 
+  marginBottom: '25px',
+  textAlign: 'center'
+};
+
+const avatar = { 
+  width: '80px', 
+  height: '80px', 
+  borderRadius: '50%', 
+  background: '#2c3e50', 
+  color: 'white', 
+  display: 'flex', 
+  alignItems: 'center', 
+  justifyContent: 'center', 
+  fontSize: '2rem', 
+  fontWeight: 'bold',
+  boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+};
+
+// Button Group for mobile (Horizontal scroll or stack)
+const btnGroup = {
+  display: 'flex',
+  gap: '10px',
+  width: '100%',
+  justifyContent: 'center'
+};
+
+// Form Grid: Stacks to 1 column on mobile
+const formGrid = { 
+  display: 'grid', 
+  gridTemplateColumns: '1fr', // Changed from 1fr 1fr to single column
+  gap: '12px' 
+};
+
+const input = { 
+  padding: '14px', // Taller for easier touch
+  borderRadius: '10px', 
+  border: '1px solid #eee', 
+  background: '#f9f9f9', 
+  fontSize: '1rem', // Prevents iOS zoom-in
+  width: '100%',
+  boxSizing: 'border-box'
+};
+
+const saveBtn = { 
+  gridColumn: '1', // Reset from span 2
+  background: '#27ae60', 
+  color: 'white', 
+  border: 'none', 
+  padding: '14px', 
+  borderRadius: '10px', 
+  cursor: 'pointer', 
+  fontWeight: 'bold', 
+  display: 'flex', 
+  justifyContent: 'center', 
+  gap: '8px',
+  fontSize: '1rem'
+};
+
+// Order History Improvements
+const orderTopBar = { 
+  padding: '12px 15px', 
+  background: '#fcfcfc', 
+  borderBottom: '1px solid #eee', 
+  display: 'flex', 
+  flexDirection: 'column', // Stack ID and Date on mobile
+  alignItems: 'flex-start', 
+  gap: '5px',
+  fontSize: '0.85rem' 
+};
+
+const orderFooter = { 
+  padding: '12px 15px', 
+  background: '#fcfcfc', 
+  borderTop: '1px solid #eee', 
+  display: 'flex', 
+  justifyContent: 'space-between', 
+  alignItems: 'center',
+  flexWrap: 'wrap', // Allow status and total to wrap if needed
+  gap: '10px'
+};
+
+const itemDetailRow = { 
+  display: 'flex', 
+  justifyContent: 'space-between', 
+  alignItems: 'center', 
+  padding: '8px 0',
+  borderBottom: '1px solid #f9f9f9'
+};
+
+const statusTag = (s) => ({ 
+  fontSize: '0.7rem', 
+  textTransform: 'uppercase', 
+  padding: '5px 12px', 
+  borderRadius: '20px', 
+  background: s === 'completed' ? '#27ae60' : '#f39c12', 
+  color: 'white', 
+  fontWeight: 'bold',
+  textAlign: 'center'
+});
 export default Profile;

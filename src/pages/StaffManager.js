@@ -91,20 +91,104 @@ const StaffManager = () => {
   );
 };
 
-// --- STYLES ---
-const container = { padding: '40px', backgroundColor: '#f9f9f9', minHeight: '100vh', fontFamily: 'Inter, sans-serif' };
-const title = { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.8rem', marginBottom: '30px' };
-const formCard = { background: '#fff', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '30px' };
-const formStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: '15px', alignItems: 'center' };
-const input = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '0.9rem' };
-const addBtn = { background: '#1a1a1a', color: '#fff', border: 'none', padding: '12px 20px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' };
+// --- RESPONSIVE DASHBOARD/STAFF STYLES ---
 
-const tableCard = { background: '#fff', padding: '25px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' };
-const table = { width: '100%', borderCollapse: 'collapse', marginTop: '15px' };
-const thRow = { textAlign: 'left', borderBottom: '2px solid #eee' };
-const th = { padding: '15px', color: '#666', fontWeight: '600' };
-const td = { padding: '15px', borderBottom: '1px solid #f0f0f0' };
-const tr = { transition: '0.2s' };
-const delBtn = { background: '#fff0f0', color: '#e74c3c', border: '1px solid #ffcccc', padding: '8px', borderRadius: '6px', cursor: 'pointer' };
+const container = { 
+  padding: '20px 15px', // Reduced padding for mobile
+  backgroundColor: '#f9f9f9', 
+  minHeight: '100vh', 
+  fontFamily: 'Inter, sans-serif',
+  boxSizing: 'border-box'
+};
 
+const title = { 
+  display: 'flex', 
+  alignItems: 'center', 
+  gap: '10px', 
+  fontSize: '1.4rem', // Smaller title for mobile
+  marginBottom: '20px' 
+};
+
+const formCard = { 
+  background: '#fff', 
+  padding: '20px', 
+  borderRadius: '15px', 
+  boxShadow: '0 4px 15px rgba(0,0,0,0.05)', 
+  marginBottom: '25px' 
+};
+
+// Form: Stacks everything vertically for easy typing
+const formStyle = { 
+  display: 'flex', 
+  flexDirection: 'column', 
+  gap: '12px' 
+};
+
+const input = { 
+  padding: '14px', 
+  borderRadius: '10px', 
+  border: '1px solid #ddd', 
+  fontSize: '1rem', // Prevents iOS auto-zoom
+  width: '100%',
+  boxSizing: 'border-box'
+};
+
+const addBtn = { 
+  background: '#1a1a1a', 
+  color: '#fff', 
+  border: 'none', 
+  padding: '16px', 
+  borderRadius: '10px', 
+  cursor: 'pointer', 
+  display: 'flex', 
+  alignItems: 'center', 
+  justifyContent: 'center', 
+  gap: '8px', 
+  fontWeight: 'bold',
+  width: '100%', // Full width button is better for thumbs
+  marginTop: '5px'
+};
+
+// Table Management: For mobile, it's best to wrap the table in a scrollable div
+const tableCard = { 
+  background: '#fff', 
+  padding: '15px', 
+  borderRadius: '15px', 
+  boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+  overflowX: 'auto' // CRITICAL: Allows table to slide horizontally if it's too wide
+};
+
+const table = { 
+  width: '100%', 
+  borderCollapse: 'collapse', 
+  marginTop: '10px',
+  minWidth: '600px' // Forces enough space for columns so they don't squash
+};
+
+const th = { 
+  padding: '12px 10px', 
+  color: '#666', 
+  fontWeight: '600',
+  fontSize: '0.85rem',
+  textAlign: 'left', 
+  borderBottom: '2px solid #eee' 
+};
+
+const td = { 
+  padding: '12px 10px', 
+  borderBottom: '1px solid #f0f0f0',
+  fontSize: '0.9rem'
+};
+
+const delBtn = { 
+  background: '#fff0f0', 
+  color: '#e74c3c', 
+  border: '1px solid #ffcccc', 
+  padding: '10px', // Larger hit area
+  borderRadius: '8px', 
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+};
 export default StaffManager;
