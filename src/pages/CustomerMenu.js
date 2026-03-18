@@ -123,7 +123,7 @@ const handleCheckout = async (method) => {
         const shortId = newOrderId.slice(-4);
 
         if (method === 'cash') {
-            const upiId = "8530912184@axl"; 
+            const upiId = "atharvashetage@oksbi"; 
             const businessName = "Healthiffy Cafe";
             // Uses totals.cash which is now defined at the top
             const upiURL = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(businessName)}&am=${totals.cash}&tn=Order_${shortId}&cu=INR`;
