@@ -191,7 +191,6 @@ const adminLinkStyle = {
   fontSize: '0.8rem',
   opacity: 0.8
 };
-
 const logoutBtnStyle = { 
   background: '#e74c3c', 
   color: 'white', 
@@ -201,6 +200,11 @@ const logoutBtnStyle = {
   cursor: 'pointer', 
   fontSize: '0.8rem',
   fontWeight: 'bold',
-  marginLeft: '10px'
+  marginLeft: 'auto', // Pushes it to the far right
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: '80px', // Ensures it's easy to tap
+  whiteSpace: 'nowrap' // Prevents the word "Logout" from splitting into two lines
 };
 export default App;
