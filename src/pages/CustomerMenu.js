@@ -115,7 +115,7 @@ const CustomerMenu = () => {
   // --- QR OVERLAY (Step 1) ---
  const QRPrePayOverlay = () => {
     const totals = calculateTotal();
-    const upiId = "atharvashetage@oksbi";
+    const upiId = "8530912184@axl";
     const upiPayload = `upi://pay?pa=${upiId}&pn=Healthiffy%20Cafe&am=${totals.cash}&cu=INR`;
 
     return (
