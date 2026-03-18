@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Coffee, ShoppingCart, Trash2, Plus, Minus, CreditCard, Star, Search, X, ChevronRight, Loader2 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
+import { QRCodeSVG } from 'qrcode.react';
 // --- FIXED: Use Environment Variable consistently ---
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const socket = io(API_URL, {
@@ -116,30 +117,52 @@ const CustomerMenu = () => {
     } catch (err) { /* ... */ }
 };
 
-const VerificationOverlay = () => (
-    <div style={verifyOverlay}>
-        <div style={verifyCard}>
-            <h2 style={verifyTitle}>Payment Pending</h2>
-            <p style={verifySubtitle}>
-                If your UPI app didn't open or showed a "Security Error":
-            </p>
-            
-            <div style={upiDetailsBox}>
-                <p><b>1. Manually pay to:</b> 8530912184@axl</p>
-                <p><b>2. Amount:</b> ₹{calculateTotal().cash}</p>
-                <p><b>3. Add Note:</b> #{currentOrderId?.slice(-4)}</p>
+
+const VerificationOverlay = () => {
+    const totals = calculateTotal();
+    const shortId = currentOrderId?.slice(-4);
+    
+    // The "Clean" UPI String
+    const upiPayload = `upi://pay?pa=8530912184@nyes&pn=Healthiffy%20Cafe&am=${totals.cash}&tn=Order_${shortId}&cu=INR`;
+
+    const handleQrTap = () => {
+        if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            window.location.href = upiPayload;
+        }
+    };
+
+    return (
+        <div style={verifyOverlay}>
+            <div style={verifyCard}>
+                <h2 style={verifyTitle}>Payment Request</h2>
+                <p style={verifySubtitle}>Total: <b>₹{totals.cash}</b></p>
+                
+                {/* CLICKABLE QR CODE FOR AUTO-SCAN FEEL */}
+                <div 
+                    onClick={handleQrTap} 
+                    style={{...qrContainer, cursor: 'pointer'}}
+                    title="Tap to open UPI App"
+                >
+                    <QRCodeSVG value={upiPayload} size={220} level="H" />
+                    <p style={{fontSize: '0.7rem', color: '#27ae60', marginTop: '10px', fontWeight: 'bold'}}>
+                        📱 TAP QR TO OPEN PHONEPE / GPAY
+                    </p>
+                </div>
+
+                <div style={upiDetailsBox}>
+                    <p style={{margin: '0', fontSize: '0.85rem', color: '#555'}}>
+                        Order <b>#{shortId}</b> is waiting. <br/>
+                        Once paid, stay here for the success screen.
+                    </p>
+                </div>
+
+                <button onClick={() => setIsVerifying(false)} style={backBtn}>
+                    Cancel Order
+                </button>
             </div>
-
-            <p style={{fontSize: '0.8rem', color: 'red'}}>
-                *Bank limits may apply to automatic links. Manual payment is 100% safe.
-            </p>
-
-            <button onClick={() => setIsVerifying(false)} style={backBtn}>
-                Back to Menu
-            </button>
         </div>
-    </div>
-);
+    );
+};
 
   // ... (Keep the rest of your return JSX and styles exactly as they are) ...
   return (
