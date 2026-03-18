@@ -95,28 +95,59 @@ const CustomerMenu = () => {
     }), { cash: 0, credits: 0 });
   };
 
- const handleCheckout = async (method) => {
-    // ... existing validation ...
+const handleCheckout = async (method) => {
+    const totals = calculateTotal(); // 1. Moved this to the top of the function
+
+    // Validation
+    if (method === 'cash' && !isMobile()) {
+        alert("🔒 For security, UPI payments must be completed on a mobile device.");
+        return;
+    }
+
+    if (method === 'credits' && userData.creditBalance < totals.credits) {
+        alert("Insufficient Credits!");
+        return;
+    }
+
     try {
+        // 2. Define orderData clearly before using it in the axios call
+        const orderData = {
+            userId: userData._id,
+            paymentMethod: method,
+            cart: cart.map(item => ({ productId: item._id, quantity: item.quantity })),
+            totalAmount: method === 'cash' ? totals.cash : totals.credits
+        };
+        
         const res = await axios.post(`${API_URL}/api/orders/place-order`, orderData);
         const newOrderId = res.data.order._id;
+        const shortId = newOrderId.slice(-4);
 
         if (method === 'cash') {
+            const upiId = "8530912184@axl"; 
+            const businessName = "Healthiffy Cafe";
+            // Uses totals.cash which is now defined at the top
+            const upiURL = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(businessName)}&am=${totals.cash}&tn=Order_${shortId}&cu=INR`;
+            
             setCurrentOrderId(newOrderId);
             setIsVerifying(true);
 
-            // Attempt auto-open
-            const upiURL = `upi://pay?pa=atharvashetage@oksbi&pn=Healthiffy&am=${totals.cash}&tn=Order_${newOrderId.slice(-4)}&cu=INR`;
-            
-            // On mobile, try to open the app
-            if (isMobile()) {
+            setTimeout(() => {
                 window.location.href = upiURL;
-            }
-        }
-        // ...
-    } catch (err) { /* ... */ }
-};
+            }, 1500);
 
+        } else {
+            navigate('/success', { 
+                state: { orderId: newOrderId, remainingCredits: res.data.remainingCredits, method: method } 
+            });
+        }
+
+        setCart([]);
+        setIsCartOpen(false);
+    } catch (err) {
+        console.error("Order Error:", err);
+        alert("System busy. Please try again.");
+    }
+};
 
 const VerificationOverlay = () => {
     const totals = calculateTotal();
@@ -418,4 +449,15 @@ const backBtn = {
   color: '#64748b',
   fontSize: '0.9rem'
 };
+const qrContainer = {
+    background: 'white',
+    padding: '15px',
+    borderRadius: '15px',
+    display: 'inline-block',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+    marginBottom: '20px',
+    marginTop: '10px'
+};
+
+
 export default CustomerMenu;
