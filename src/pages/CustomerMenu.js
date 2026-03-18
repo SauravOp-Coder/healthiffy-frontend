@@ -104,7 +104,7 @@ const CustomerMenu = () => {
     const totals = calculateTotal();
     const shortId = currentOrderId?.slice(-4);
     // Use your verified UPI ID here
-    const upiId = "sauravshinde@oksbi";
+    const upiId = "853091214@axl";
     const upiPayload = `upi://pay?pa=${upiId}&pn=Healthiffy%20Cafe&am=${totals.cash}&tn=Order_${shortId}&cu=INR`;
 
     return (
