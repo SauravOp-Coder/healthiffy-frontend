@@ -70,7 +70,12 @@ function Layout({ children }) {
               )}
               
               {/* Added a bit of styling to the Logout button to match the theme */}
-              
+              <button 
+                style={logoutBtnStyle} 
+                onClick={() => { localStorage.clear(); window.location.href='/login'; }}
+              >
+                Logout
+              </button>
             </div>
           </div>
         </nav>
@@ -120,12 +125,83 @@ function App() {
 }
 
 // --- STYLES ---
-const navStyle = { background: '#1a1a1a', color: 'white', padding: '0 20px', position: 'sticky', top: 0, zIndex: 1000, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' };
-const navContent = { maxWidth: '1200px', margin: '0 auto', height: '70px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const logoStyle = { display: 'flex', alignItems: 'center', gap: '10px', color: '#f39c12', textDecoration: 'none', fontSize: '1.4rem', fontWeight: 'bold' };
-const linkGroup = { display: 'flex', alignItems: 'center', gap: '20px' };
-const linkStyle = { color: '#ddd', textDecoration: 'none', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.3s' };
-const adminLinkStyle = { ...linkStyle, color: '#888', fontSize: '0.85rem' };
-const logoutBtnStyle = { background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' };
+// --- RESPONSIVE NAVIGATION STYLES ---
 
+const navStyle = { 
+  background: '#1a1a1a', 
+  color: 'white', 
+  padding: '10px 15px', // Changed from 0 20px to give vertical breathing room
+  position: 'sticky', 
+  top: 0, 
+  zIndex: 1000, 
+  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+  width: '100%',
+  boxSizing: 'border-box'
+};
+
+const navContent = { 
+  maxWidth: '1200px', 
+  margin: '0 auto', 
+  // Removed fixed height: '70px' so it can grow if links wrap
+  display: 'flex', 
+  flexDirection: 'column', // Stack Logo and Links on very small screens
+  alignItems: 'center',
+  gap: '12px'
+};
+
+// On slightly larger mobile screens/Tablets, keep them side-by-side
+// (You can achieve this by adding a media query or keeping it as a flex-wrap)
+const logoStyle = { 
+  display: 'flex', 
+  alignItems: 'center', 
+  gap: '8px', 
+  color: '#f39c12', 
+  textDecoration: 'none', 
+  fontSize: '1.2rem', // Slightly smaller for mobile
+  fontWeight: 'bold' 
+};
+
+const linkGroup = { 
+  display: 'flex', 
+  alignItems: 'center', 
+  gap: '12px', // Tighter gap for mobile
+  overflowX: 'auto', // Allows swiping links if they are too wide
+  width: '100%',
+  justifyContent: 'center',
+  paddingBottom: '5px',
+  WebkitOverflowScrolling: 'touch',
+  scrollbarWidth: 'none' // Cleaner look
+};
+
+const linkStyle = { 
+  color: '#ddd', 
+  textDecoration: 'none', 
+  fontSize: '0.85rem', // Smaller text for more links
+  display: 'flex', 
+  flexDirection: 'column', // Stack Icon over Text for a "Tab Bar" feel
+  alignItems: 'center', 
+  gap: '4px', 
+  transition: '0.3s',
+  minWidth: '60px', // Consistent touch area
+  textAlign: 'center'
+};
+
+const adminLinkStyle = { 
+  ...linkStyle, 
+  color: '#f39c12', // Make it stand out slightly
+  fontSize: '0.8rem',
+  opacity: 0.8
+};
+
+const logoutBtnStyle = { 
+  background: '#e74c3c', 
+  color: 'white', 
+  border: 'none', 
+  padding: '8px 12px', 
+  borderRadius: '8px', 
+  cursor: 'pointer', 
+  fontSize: '0.8rem',
+  fontWeight: 'bold',
+  marginLeft: '10px'
+};
 export default App;
