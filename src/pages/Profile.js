@@ -148,108 +148,100 @@ const Profile = () => {
   );
 };
 
-// --- STYLES ---
-const container = { padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: '"Inter", sans-serif' };
-const card = { background: 'white', padding: '25px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f0f0f0' };
-const profileHeader = { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px', flexWrap: 'wrap' };
-const avatar = { width: '60px', height: '60px', borderRadius: '50%', background: '#1a1a1a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' };
-const buttonGroup = { display: 'flex', gap: '8px' };
-const editBtn = { background: '#f5f5f5', border: '1px solid #eee', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600' };
-const logoutBtn = { background: '#fee2e2', border: 'none', color: '#dc2626', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' };
-const sectionTitle = { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', fontSize: '1.2rem' };
-const loadingStyle = { textAlign: 'center', marginTop: '100px', color: '#666' };
-const dateStyle = { display: 'flex', alignItems: 'center', gap: '5px', color: '#888', fontSize: '0.85rem' };
-
-// Status Colors Logic
-const statusTag = (s) => {
-  let bg = '#f39c12'; // Default: Pending/Preparing
-  if (s === 'delivered' || s === 'ready') bg = '#27ae60';
-  if (s === 'cancelled') bg = '#e74c3c';
-  
-  return { 
-    fontSize: '0.7rem', 
-    textTransform: 'uppercase', 
-    padding: '4px 10px', 
-    borderRadius: '20px', 
-    background: bg, 
-    color: 'white', 
-    fontWeight: 'bold' 
-  };
-};
-// --- RESPONSIVE PROFILE STYLES ---
-
+// --- UPDATED RESPONSIVE STYLES ---
 const container = { 
-  padding: '20px 15px', // Reduced from 40px for mobile
+  padding: '15px', 
   maxWidth: '800px', 
   margin: '0 auto', 
-  fontFamily: 'sans-serif',
-  boxSizing: 'border-box'
+  fontFamily: '"Inter", sans-serif',
+  boxSizing: 'border-box' // Added to prevent horizontal overflow
 };
 
 const card = { 
   background: 'white', 
-  padding: '20px', // Reduced from 30px
+  padding: '20px', 
   borderRadius: '20px', 
-  boxShadow: '0 10px 25px rgba(0,0,0,0.05)', 
-  border: '1px solid #f0f0f0',
-  boxSizing: 'border-box' 
+  boxShadow: '0 4px 20px rgba(0,0,0,0.05)', 
+  border: '1px solid #f0f0f0' 
 };
 
 const profileHeader = { 
   display: 'flex', 
-  flexDirection: 'column', // Stack avatar and buttons on mobile
   alignItems: 'center', 
   gap: '15px', 
-  marginBottom: '25px',
-  textAlign: 'center'
+  marginBottom: '25px', 
+  flexWrap: 'wrap', // Allows buttons to wrap below the name on small phones
+  justifyContent: 'center' // Centers everything on mobile
 };
 
 const avatar = { 
-  width: '80px', 
-  height: '80px', 
+  width: '70px', 
+  height: '70px', 
   borderRadius: '50%', 
-  background: '#2c3e50', 
+  background: '#1a1a1a', 
   color: 'white', 
   display: 'flex', 
   alignItems: 'center', 
   justifyContent: 'center', 
-  fontSize: '2rem', 
-  fontWeight: 'bold',
-  boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+  fontSize: '1.8rem', 
+  fontWeight: 'bold' 
 };
 
-// Button Group for mobile (Horizontal scroll or stack)
-const btnGroup = {
-  display: 'flex',
-  gap: '10px',
-  width: '100%',
-  justifyContent: 'center'
+const buttonGroup = { 
+  display: 'flex', 
+  gap: '10px', 
+  width: '100%', 
+  justifyContent: 'center' 
 };
 
-// Form Grid: Stacks to 1 column on mobile
+const editBtn = { 
+  background: '#f5f5f5', 
+  border: '1px solid #eee', 
+  padding: '10px 20px', 
+  borderRadius: '12px', 
+  cursor: 'pointer', 
+  fontWeight: '600',
+  flex: 1 // Makes buttons equal width on mobile
+};
+
+const logoutBtn = { 
+  background: '#fee2e2', 
+  border: 'none', 
+  color: '#dc2626', 
+  padding: '10px 20px', 
+  borderRadius: '12px', 
+  cursor: 'pointer', 
+  fontWeight: '600', 
+  display: 'flex', 
+  alignItems: 'center', 
+  justifyContent: 'center', 
+  gap: '5px',
+  flex: 1 // Makes buttons equal width on mobile
+};
+
+// Form: Stacks to 1 column for easier mobile typing
 const formGrid = { 
-  display: 'grid', 
-  gridTemplateColumns: '1fr', // Changed from 1fr 1fr to single column
+  display: 'flex', 
+  flexDirection: 'column', 
   gap: '12px' 
 };
 
 const input = { 
-  padding: '14px', // Taller for easier touch
+  padding: '14px', 
   borderRadius: '10px', 
   border: '1px solid #eee', 
   background: '#f9f9f9', 
-  fontSize: '1rem', // Prevents iOS zoom-in
+  fontSize: '1rem', // 16px font prevents auto-zoom on iPhones
   width: '100%',
   boxSizing: 'border-box'
 };
 
 const saveBtn = { 
-  gridColumn: '1', // Reset from span 2
-  background: '#27ae60', 
+  background: '#1a1a1a', 
   color: 'white', 
   border: 'none', 
-  padding: '14px', 
-  borderRadius: '10px', 
+  padding: '16px', 
+  borderRadius: '12px', 
   cursor: 'pointer', 
   fontWeight: 'bold', 
   display: 'flex', 
@@ -258,45 +250,26 @@ const saveBtn = {
   fontSize: '1rem'
 };
 
-// Order History Improvements
-const orderTopBar = { 
-  padding: '12px 15px', 
-  background: '#fcfcfc', 
-  borderBottom: '1px solid #eee', 
-  display: 'flex', 
-  flexDirection: 'column', // Stack ID and Date on mobile
-  alignItems: 'flex-start', 
-  gap: '5px',
-  fontSize: '0.85rem' 
-};
+const infoDisplay = { borderTop: '1px solid #f0f0f0', paddingTop: '20px' };
+const infoRow = { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', color: '#444', fontSize: '0.95rem' };
 
-const orderFooter = { 
-  padding: '12px 15px', 
-  background: '#fcfcfc', 
-  borderTop: '1px solid #eee', 
-  display: 'flex', 
-  justifyContent: 'space-between', 
-  alignItems: 'center',
-  flexWrap: 'wrap', // Allow status and total to wrap if needed
-  gap: '10px'
-};
+const orderContainer = { background: 'white', borderRadius: '15px', border: '1px solid #eee', marginBottom: '15px', overflow: 'hidden' };
+const orderTopBar = { padding: '12px 15px', background: '#fcfcfc', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' };
+const itemsList = { padding: '15px' };
+const itemDetailRow = { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' };
+const itemPrimaryText = { fontWeight: '600', color: '#2c3e50', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' };
+const qtyBadge = { background: '#f0f0f0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', color: '#555' };
+const orderFooter = { padding: '12px 15px', background: '#fcfcfc', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const totalText = { fontWeight: 'bold', fontSize: '1rem' };
+const sectionTitle = { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', fontSize: '1.2rem', fontWeight: '800' };
+const loadingStyle = { textAlign: 'center', marginTop: '100px', color: '#666', fontFamily: 'sans-serif' };
+const dateStyle = { display: 'flex', alignItems: 'center', gap: '5px', color: '#888', fontSize: '0.8rem' };
+const emptyHistory = { textAlign: 'center', padding: '50px', background: '#f9f9f9', borderRadius: '20px', color: '#999' };
 
-const itemDetailRow = { 
-  display: 'flex', 
-  justifyContent: 'space-between', 
-  alignItems: 'center', 
-  padding: '8px 0',
-  borderBottom: '1px solid #f9f9f9'
+const statusTag = (s) => {
+  let bg = '#f39c12';
+  if (s === 'delivered' || s === 'ready') bg = '#27ae60';
+  if (s === 'cancelled') bg = '#e74c3c';
+  return { fontSize: '0.65rem', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '20px', background: bg, color: 'white', fontWeight: 'bold' };
 };
-
-const statusTag = (s) => ({ 
-  fontSize: '0.7rem', 
-  textTransform: 'uppercase', 
-  padding: '5px 12px', 
-  borderRadius: '20px', 
-  background: s === 'completed' ? '#27ae60' : '#f39c12', 
-  color: 'white', 
-  fontWeight: 'bold',
-  textAlign: 'center'
-});
 export default Profile;
