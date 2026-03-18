@@ -1,4 +1,4 @@
-\import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Coffee, ShoppingCart, Trash2, Plus, Minus, Star, Search, X, ChevronRight, Loader2, CheckCircle } from 'lucide-react';
@@ -18,10 +18,8 @@ const CustomerMenu = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  
-  // Payment States
-  const [showQR, setShowQR] = useState(false); // Step 1: Show QR
-  const [isVerifying, setIsVerifying] = useState(false); // Step 2: Waiting for Staff
+  const [showQR, setShowQR] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState(null);
   
   const navigate = useNavigate();
@@ -74,18 +72,6 @@ const CustomerMenu = () => {
     setIsCartOpen(true);
   };
 
-  // --- TRIGGER FLOW ---
-  const handleCheckout = async (method) => {
-    if (method === 'cash') {
-        setShowQR(true); // Just show the QR first
-        setIsCartOpen(false);
-    } else {
-        // Direct processing for credits
-        confirmAndPlaceOrder('credits');
-    }
-  };
-
-  // --- ACTUAL ORDER PLACEMENT ---
   const confirmAndPlaceOrder = async (method) => {
     const totals = calculateTotal();
     try {
@@ -95,57 +81,43 @@ const CustomerMenu = () => {
             cart: cart.map(item => ({ productId: item._id, quantity: item.quantity })),
             totalAmount: method === 'cash' ? totals.cash : totals.credits
         };
-        
         const res = await axios.post(`${API_URL}/api/orders/place-order`, orderData);
-        const newId = res.data.order._id;
-        
         if (method === 'cash') {
-            setCurrentOrderId(newId);
+            setCurrentOrderId(res.data.order._id);
             setShowQR(false);
-            setIsVerifying(true); // Now show the "Waiting for Staff" screen
+            setIsVerifying(true);
         } else {
-            navigate('/success', { state: { orderId: newId, remainingCredits: res.data.remainingCredits } });
+            navigate('/success', { state: { orderId: res.data.order._id, remainingCredits: res.data.remainingCredits } });
         }
         setCart([]);
-    } catch (err) {
-        alert("Failed to place order. Please try again.");
-    }
+    } catch (err) { alert("Failed to place order."); }
   };
 
-  // --- QR OVERLAY (Step 1) ---
- const QRPrePayOverlay = () => {
+  const categories = ["All","COFFEE", "SALAD BOWLS", "OTHER BOWLS", "FRUIT BOWLS", "SANDWICH","CHIA PUDDING","ROASTED MAKHANA","OATS BOWL","SMOOTHIES","COFFEE & TEA","HEALTHY GREEN TEAS","FRESH FRUITS & JUICE","HOT BEVERAGE SHOTS"];
+
+  const QRPrePayOverlay = () => {
     const totals = calculateTotal();
-    const upiId = "8530912184@axl";
+    const upiId = "atharvashetage@oksbi";
     const upiPayload = `upi://pay?pa=${upiId}&pn=Healthiffy%20Cafe&am=${totals.cash}&cu=INR`;
 
     return (
         <div style={verifyOverlay}>
             <div style={verifyCard}>
                 <h2 style={verifyTitle}>Scan to Pay</h2>
-                <p style={verifySubtitle}>Total: <b style={{fontSize: '1.2rem'}}>₹{totals.cash}</b></p>
-                
-                <div style={qrContainer}>
-                    <QRCodeSVG value={upiPayload} size={220} level="H" />
-                </div>
-
-                {/* --- MOBILE INSTRUCTIONS TOOLTIP --- */}
+                <p style={verifySubtitle}>Total: <b>₹{totals.cash}</b></p>
+                <div style={qrContainer}><QRCodeSVG value={upiPayload} size={200} level="H" /></div>
                 <div style={instructionBox}>
-                    <p style={instructionHeader}>📱 Paying on this Phone?</p>
+                    <p style={instructionHeader}>📱 Paying on Mobile?</p>
                     <ul style={instructionList}>
-                        <li>Take a <b>Screenshot</b> of this QR.</li>
-                        <li>Open GPay / PhonePe / Paytm.</li>
-                        <li>Choose <b>'Scan QR'</b> then select <b>'Upload from Gallery'</b>.</li>
+                        <li>Screenshot this QR.</li>
+                        <li>Open UPI App (GPay/PhonePe).</li>
+                        <li>Scan > 'Upload from Gallery'.</li>
                     </ul>
-                    <p style={{...instructionHeader, marginTop: '10px'}}>💻 Paying from Laptop?</p>
-                    <p style={{fontSize: '0.75rem', margin: '4px 0'}}>Just scan the QR directly with your phone's camera.</p>
                 </div>
-
                 <button onClick={() => confirmAndPlaceOrder('cash')} style={confirmPaidBtn}>
                     <CheckCircle size={18} /> I Have Paid
                 </button>
-                <button onClick={() => setShowQR(false)} style={{...backBtn, width: '100%', marginTop: '10px'}}>
-                    Cancel
-                </button>
+                <button onClick={() => setShowQR(false)} style={backBtnStyle}>Cancel</button>
             </div>
         </div>
     );
@@ -153,41 +125,32 @@ const CustomerMenu = () => {
 
   return (
     <div style={container}>
-      {/* STEP 1: SHOW QR FIRST */}
       {showQR && <QRPrePayOverlay />}
-
-      {/* STEP 2: WAITING FOR STAFF */}
       {isVerifying && (
         <div style={verifyOverlay}>
           <div style={verifyCard}>
             <Loader2 size={50} className="spin-icon" color="#f39c12" />
-            <h2 style={{margin: '20px 0 10px 0'}}>Verifying...</h2>
-            <p style={{color: '#666'}}>Order sent to kitchen. Please wait for staff to confirm your payment.</p>
-            <div style={orderRefTag}>Order ID: #{currentOrderId?.slice(-4)}</div>
+            <h2 style={{marginTop: '20px'}}>Verifying...</h2>
+            <p>Waiting for kitchen to confirm payment.</p>
+            <div style={orderRefTag}>Ref: #{currentOrderId?.slice(-4)}</div>
           </div>
         </div>
       )}
 
-      {/* Header */}
       <header style={headerStyle}>
-        <div>
-          <h1 style={logo}><Coffee size={28} /> Healthiffy</h1>
-          <p style={welcomeText}>Welcome, <b>{userData?.name}</b></p>
-        </div>
+        <h1 style={logo}><Coffee size={24} /> Healthiffy</h1>
         <button onClick={() => setIsCartOpen(true)} style={cartBtn}>
             <ShoppingCart size={20} />
             {cart.length > 0 && <span style={cartBadge}>{cart.length}</span>}
         </button>
       </header>
 
-      {/* Category Row */}
       <div style={categoryRow}>
         {categories.map(cat => (
           <button key={cat} onClick={() => setActiveCategory(cat)} style={activeCategory === cat ? activeTab : tabBtn}>{cat}</button>
         ))}
       </div>
 
-      {/* Grid */}
       <div style={grid}>
         {products.map(item => (
           <div key={item._id} style={card}>
@@ -203,96 +166,63 @@ const CustomerMenu = () => {
         ))}
       </div>
 
-      {/* Sidebar Cart */}
       {isCartOpen && (
         <>
           <div style={overlay} onClick={() => setIsCartOpen(false)} />
           <div style={sidebar}>
-            <div style={sidebarHeader}>
-                <h2 style={{margin:0}}>Basket</h2>
-                <X onClick={() => setIsCartOpen(false)} style={{cursor:'pointer'}}/>
-            </div>
+            <div style={sidebarHeader}><h2>Basket</h2><X onClick={() => setIsCartOpen(false)} style={{cursor:'pointer'}}/></div>
             <div style={cartList}>
                 {cart.map(item => (
-                    <div key={item._id} style={cartItem}>
-                        <div style={{flex:1}}>{item.name} x {item.quantity}</div>
-                        <div>₹{item.price * item.quantity}</div>
-                    </div>
+                    <div key={item._id} style={cartItem}><span>{item.name} x{item.quantity}</span><span>₹{item.price * item.quantity}</span></div>
                 ))}
             </div>
             <div style={sidebarFooter}>
-                <button onClick={() => handleCheckout('cash')} style={payNowBtn}>Pay via UPI</button>
+                <button onClick={() => {setShowQR(true); setIsCartOpen(false);}} style={payNowBtn}>Pay via UPI (Scan)</button>
             </div>
           </div>
         </>
       )}
 
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .spin-icon { animation: spin 2s linear infinite; }
-      `}</style>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .spin-icon { animation: spin 2s linear infinite; }`}</style>
     </div>
   );
 };
 
-// --- STYLES ---
+// --- Styles ---
 const container = { padding: '15px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' };
-const logo = { display: 'flex', alignItems: 'center', gap: '8px', margin: 0, fontSize: '1.5rem' };
-const welcomeText = { margin: 0, fontSize: '0.8rem', color: '#666' };
+const logo = { display: 'flex', alignItems: 'center', gap: '8px', margin: 0, fontSize: '1.2rem' };
 const cartBtn = { position: 'relative', background: '#1a1a1a', color: 'white', border: 'none', padding: '10px', borderRadius: '12px' };
 const cartBadge = { position: 'absolute', top: '-5px', right: '-5px', background: '#f39c12', color: 'white', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px' };
 const categoryRow = { display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '20px', paddingBottom: '5px' };
 const tabBtn = { padding: '8px 16px', borderRadius: '10px', border: '1px solid #eee', background: 'white', whiteSpace: 'nowrap' };
 const activeTab = { ...tabBtn, background: '#1a1a1a', color: 'white' };
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' };
+const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' };
 const card = { background: '#fff', borderRadius: '16px', border: '1px solid #f0f0f0', overflow: 'hidden' };
-const imgContainer = { height: '140px' };
+const imgContainer = { height: '120px' };
 const imgStyle = { width: '100%', height: '100%', objectFit: 'cover' };
-const cardContent = { padding: '12px' };
-const productTitle = { margin: '0 0 8px 0', fontSize: '0.9rem', fontWeight: 'bold' };
+const cardContent = { padding: '10px' };
+const productTitle = { margin: '0 0 5px 0', fontSize: '0.85rem', fontWeight: 'bold' };
 const priceContainer = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const cashPrice = { fontWeight: 'bold' };
-const addBtn = { background: '#f5f5f5', border: 'none', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' };
+const cashPrice = { fontWeight: 'bold', fontSize: '0.9rem' };
+const addBtn = { background: '#f5f5f5', border: 'none', padding: '5px 10px', borderRadius: '8px', cursor: 'pointer' };
 const overlay = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)', zIndex: 1000 };
 const sidebar = { position: 'fixed', right: 0, top: 0, width: '300px', height: '100%', background: 'white', zIndex: 1001, display: 'flex', flexDirection: 'column' };
 const sidebarHeader = { padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' };
 const cartList = { flexGrow: 1, padding: '20px', overflowY: 'auto' };
-const cartItem = { display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem' };
+const cartItem = { display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.85rem' };
 const sidebarFooter = { padding: '20px', borderTop: '1px solid #eee' };
 const payNowBtn = { width: '100%', background: '#1a1a1a', color: 'white', padding: '14px', borderRadius: '12px', fontWeight: 'bold', border: 'none' };
-
 const verifyOverlay = { position: 'fixed', top:0, left:0, width:'100%', height:'100%', backgroundColor:'rgba(255,255,255,0.98)', zIndex: 2000, display:'flex', justifyContent:'center', alignItems:'center', textAlign:'center' };
-const verifyCard = { padding: '20px', maxWidth: '350px', width: '90%' };
-const verifyTitle = { fontSize: '1.5rem', fontWeight: 'bold', margin: '0 0 10px 0' };
-const verifySubtitle = { color: '#666', marginBottom: '20px' };
-const qrContainer = { background: 'white', padding: '15px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', marginBottom: '20px', display: 'inline-block' };
-const upiDetailsBox = { background: '#f8fafc', padding: '15px', borderRadius: '12px', textAlign: 'left', marginBottom: '20px', border: '1px solid #e2e8f0' };
-const confirmPaidBtn = { width: '100%', background: '#27ae60', color: 'white', padding: '15px', borderRadius: '12px', fontWeight: 'bold', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' };
-const backBtn = { background: 'none', border: '1px solid #ccc', padding: '10px', borderRadius: '10px', color: '#666' };
-const orderRefTag = { marginTop: '20px', padding: '8px', background: '#eee', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' };
-const instructionBox = {
-    background: '#fff9eb', // Light warning/info yellow
-    border: '1px solid #ffeeba',
-    padding: '12px',
-    borderRadius: '12px',
-    textAlign: 'left',
-    marginBottom: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-};
+const verifyCard = { padding: '20px', width: '90%', maxWidth: '350px' };
+const verifyTitle = { fontSize: '1.4rem', fontWeight: 'bold', margin: '0 0 5px 0' };
+const verifySubtitle = { color: '#666', fontSize: '0.9rem', marginBottom: '15px' };
+const qrContainer = { background: 'white', padding: '10px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', marginBottom: '15px', display: 'inline-block' };
+const instructionBox = { background: '#fff9eb', padding: '12px', borderRadius: '10px', textAlign: 'left', marginBottom: '15px', border: '1px solid #ffeeba' };
+const instructionHeader = { fontSize: '0.8rem', fontWeight: '700', color: '#856404', marginBottom: '5px' };
+const instructionList = { margin: 0, paddingLeft: '15px', fontSize: '0.75rem', color: '#856404' };
+const confirmPaidBtn = { width: '100%', background: '#27ae60', color: 'white', padding: '14px', borderRadius: '10px', fontWeight: 'bold', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' };
+const backBtnStyle = { width: '100%', marginTop: '10px', background: 'none', border: '1px solid #ddd', padding: '10px', borderRadius: '10px', color: '#666' };
+const orderRefTag = { marginTop: '15px', padding: '8px', background: '#eee', borderRadius: '8px', fontSize: '0.8rem' };
 
-const instructionHeader = {
-    fontSize: '0.85rem',
-    fontWeight: '700',
-    color: '#856404',
-    margin: '0 0 5px 0'
-};
-
-const instructionList = {
-    margin: 0,
-    paddingLeft: '18px',
-    fontSize: '0.75rem',
-    color: '#856404',
-    lineHeight: '1.4'
-};
 export default CustomerMenu;
