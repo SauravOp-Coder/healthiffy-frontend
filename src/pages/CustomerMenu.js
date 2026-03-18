@@ -106,7 +106,7 @@ const CustomerMenu = () => {
             setIsVerifying(true);
 
             // Attempt auto-open
-            const upiURL = `upi://pay?pa=8530912184@nyes&pn=Healthiffy&am=${totals.cash}&tn=Order_${newOrderId.slice(-4)}&cu=INR`;
+            const upiURL = `upi://pay?pa=atharvashetage@oksbi&pn=Healthiffy&am=${totals.cash}&tn=Order_${newOrderId.slice(-4)}&cu=INR`;
             
             // On mobile, try to open the app
             if (isMobile()) {
@@ -123,7 +123,7 @@ const VerificationOverlay = () => {
     const shortId = currentOrderId?.slice(-4);
     
     // The "Clean" UPI String
-    const upiPayload = `upi://pay?pa=8530912184@nyes&pn=Healthiffy%20Cafe&am=${totals.cash}&tn=Order_${shortId}&cu=INR`;
+    const upiPayload = `upi://pay?pa=atharvashetage@oksbi&pn=Healthiffy%20Cafe&am=${totals.cash}&tn=Order_${shortId}&cu=INR`;
 
     const handleQrTap = () => {
         if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
