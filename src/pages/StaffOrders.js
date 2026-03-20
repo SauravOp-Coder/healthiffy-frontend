@@ -43,7 +43,7 @@ const StaffOrders = () => {
     // LISTEN FOR NEW PAYMENT CLAIMS (CASH/UPI)
     socket.on('new-payment-request', (data) => {
       setPendingClaims(prev => {
-        // Prevent duplicate claims for the same user
+        // Prevent duplicate cards for the same user
         if (prev.find(c => c.userId === data.userId)) return prev;
         return [...prev, data];
       });
@@ -58,6 +58,7 @@ const StaffOrders = () => {
 
     const interval = setInterval(loadOrders, 10000); 
     const timeClock = setInterval(() => setCurrentTime(new Date()), 1000);
+    
     return () => { 
       clearInterval(interval); 
       clearInterval(timeClock);
@@ -66,21 +67,21 @@ const StaffOrders = () => {
     };
   }, []);
 
-  // NEW: VERIFY AND CREATE THE ORDER
+  // --- CRITICAL FIX: APPROVE AND NOTIFY CUSTOMER ---
   const handleApproveClaim = (claim) => {
-    // This sends the data to the backend to finally .save() the order
+    // This triggers the 'staff-approve-order' block in server.js
+    // Server will: 1. Save to DB, 2. Notify the Customer by their User ID
     socket.emit('staff-approve-order', {
       userId: claim.userId,
       cart: claim.cart,
       total: claim.total
     });
 
-    // Remove from local "Pending Claims" list
+    // Immediately remove the orange card from the Staff UI
     setPendingClaims(prev => prev.filter(c => c.userId !== claim.userId));
     
-    // Wait a second for DB to save, then refresh
-    setTimeout(loadOrders, 1000);
-    alert(`Order for ${claim.userName} verified and placed!`);
+    // Refresh list after 1 second so the new "White" active order card appears
+    setTimeout(loadOrders, 1200);
   };
 
   const updateStatus = async (orderId, newStatus) => {
@@ -110,13 +111,13 @@ const StaffOrders = () => {
       </header>
 
       <div style={kdsGrid}>
-        {/* SECTION 1: PENDING PAYMENT CLAIMS (NOT YET IN DB) */}
+        {/* SECTION 1: PENDING PAYMENT CLAIMS (Orange Cards) */}
         {pendingClaims.map((claim, index) => (
           <div key={`claim-${index}`} style={{...orderCard, border: '2px solid #F39C12', backgroundColor: '#FFF9F0'}}>
              <div style={cardHeader}>
                 <div>
-                    <span style={{...orderNumber, color: '#F39C12'}}>PAYMENT CLAIM</span>
-                    <div style={methodTag}>WAITING FOR VERIFICATION</div>
+                    <span style={{...orderNumber, color: '#F39C12'}}>VERIFY PAYMENT</span>
+                    <div style={methodTag}>CUSTOMER WAITING</div>
                 </div>
                 <div style={claimUserTag}>{claim.userName}</div>
              </div>
@@ -130,13 +131,13 @@ const StaffOrders = () => {
              </div>
              <div style={cardAction}>
                 <button onClick={() => handleApproveClaim(claim)} style={verifyBtn}>
-                    <CheckCircle size={18} /> Verify & Place Order (₹{claim.total})
+                    <CheckCircle size={18} /> Confirm Payment (₹{claim.total})
                 </button>
              </div>
           </div>
         ))}
 
-        {/* SECTION 2: ACTIVE ORDERS (ALREADY IN DB) */}
+        {/* SECTION 2: ACTIVE ORDERS (Already in Database) */}
         {orders.filter(o => o.status !== 'delivered').map(order => {
           const locationData = customerLocations[order._id];
           return (
@@ -167,9 +168,9 @@ const StaffOrders = () => {
               </div>
 
               <div style={cardAction}>
-                {order.status === 'Paid' || order.status === 'pending' ? (
+                {(order.status === 'Paid' || order.status === 'pending') && (
                    <button onClick={() => updateStatus(order._id, 'preparing')} style={prepBtn}>Start Preparing</button>
-                ) : null}
+                )}
                 {order.status === 'preparing' && (
                    <button onClick={() => updateStatus(order._id, 'ready')} style={readyBtn}>Set as Ready</button>
                 )}
@@ -182,7 +183,7 @@ const StaffOrders = () => {
         })}
       </div>
 
-      {/* MAP MODAL */}
+      {/* MAP MODAL (Unchanged) */}
       {activeTracking && customerLocations[activeTracking] && (
         <div style={modalOverlay}>
           <div style={modalContent}>
@@ -190,7 +191,7 @@ const StaffOrders = () => {
               <div>
                 <h3 style={{margin:0}}>Tracking Order #{activeTracking.slice(-4)}</h3>
                 <small style={{color: '#666'}}>
-                  {customerLocations[activeTracking].isLive ? "🟢 Signal Live" : "⚪ Last Known Position"}
+                  {customerLocations[activeTracking].isLive ? "🟢 Signal Live" : "Last Position"}
                 </small>
               </div>
               <X cursor="pointer" onClick={() => setActiveTracking(null)} />
@@ -222,7 +223,7 @@ const StaffOrders = () => {
   );
 };
 
-// Styles
+// --- Styles ---
 const claimUserTag = { background: '#F39C12', color: '#fff', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' };
 const methodTag = { fontSize: '0.7rem', fontWeight: 'bold', color: '#666', marginTop: '4px' };
 const verifyBtn = { width: '100%', padding: '16px', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer', backgroundColor: '#F39C12', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' };

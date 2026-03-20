@@ -5,6 +5,7 @@ import { Coffee, ShoppingCart, Trash2, Plus, Minus, Star, Search, X, ChevronRigh
 import { io } from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
 
+// --- API & Socket Configuration ---
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const socket = io(API_URL, {
   transports: ['websocket', 'polling'],
@@ -25,6 +26,7 @@ const CustomerMenu = () => {
   
   const navigate = useNavigate();
 
+  // Load User and Products
   useEffect(() => {
     const savedUser = JSON.parse(localStorage.getItem('user'));
     if (!savedUser) navigate('/login');
@@ -32,19 +34,28 @@ const CustomerMenu = () => {
       setUserData(savedUser);
       loadProducts();
     }
-  }, [searchTerm, activeCategory]);
+  }, [searchTerm, activeCategory, navigate]);
 
-  // LISTEN FOR STAFF APPROVAL
+  // --- CRITICAL FIX: LISTEN FOR STAFF APPROVAL ---
   useEffect(() => {
     if (userData?._id) {
+      // Address the message to the USER ID
       const eventName = `payment-verified-${userData._id}`;
+      
       socket.on(eventName, (data) => {
+        console.log("✅ Staff verified payment! Redirecting...");
         setIsVerifying(false);
-        setCart([]); // Clear cart ONLY after staff confirms
+        setCart([]); // Clear cart now that it's a real order
+        
+        // Move to success page with the new Order ID from DB
         navigate('/success', { 
-          state: { orderId: data.orderId, remainingCredits: data.remainingCredits } 
+          state: { 
+            orderId: data.orderId, 
+            remainingCredits: data.remainingCredits 
+          } 
         });
       });
+
       return () => socket.off(eventName);
     }
   }, [userData, navigate]);
@@ -77,7 +88,7 @@ const CustomerMenu = () => {
 
   const removeFromCart = (id) => setCart(cart.filter(item => item._id !== id));
 
-  const handleCheckout = async (method) => {
+  const handleCheckout = (method) => {
     const totals = calculateTotal();
 
     if (method === 'credits') {
@@ -96,17 +107,17 @@ const CustomerMenu = () => {
   const claimPayment = () => {
     const totals = calculateTotal();
     
-    // Send request to Staff Dashboard via Socket
+    // Broadcast "I have paid" to the Staff Dashboard
     socket.emit('claim-payment', {
         userId: userData._id,
         userName: userData.name,
-        cart: cart, // Sending items so staff can see what's being ordered
+        cart: cart, 
         total: totals.cash,
         method: 'cash'
     });
 
     setShowQR(false);
-    setIsVerifying(true);
+    setIsVerifying(true); // Shows the "Waiting for Staff" loader
   };
 
   // DIRECT PLACEMENT FOR CREDITS (Auto-verified)
@@ -146,7 +157,7 @@ const CustomerMenu = () => {
                     <p style={instructionHeader}>📱 Paying on Mobile?</p>
                     <ul style={instructionList}>
                         <li>Take a Screenshot of this QR.</li>
-                        <li>Open GPay/PhonePe - Scan - Upload from Gallery.</li>
+                        <li>Open UPI App - Scan - Upload from Gallery.</li>
                     </ul>
                 </div>
                 <button onClick={claimPayment} style={confirmPaidBtn}>
@@ -161,12 +172,14 @@ const CustomerMenu = () => {
   return (
     <div style={container}>
       {showQR && <QRPrePayOverlay />}
+      
+      {/* WAITING SCREEN: This disappears when staff approves */}
       {isVerifying && (
         <div style={verifyOverlay}>
           <div style={verifyCard}>
             <Loader2 size={50} className="spin-icon" color="#f39c12" />
-            <h2 style={{marginTop: '20px'}}>Waiting for Staff...</h2>
-            <p style={{color: '#666'}}>We've notified the kitchen. Your order will appear in history once staff verifies your payment.</p>
+            <h2 style={{marginTop: '20px'}}>Verifying Payment...</h2>
+            <p style={{color: '#666', fontSize: '0.9rem'}}>Please wait. The staff is verifying your UPI/Cash payment. Do not close this screen.</p>
             <div style={orderRefTag}>User: {userData?.name}</div>
           </div>
         </div>
@@ -233,7 +246,7 @@ const CustomerMenu = () => {
   );
 };
 
-// Styles remain unchanged to maintain your UI
+// --- Styles (Unchanged) ---
 const container = { padding: '15px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' };
 const logo = { display: 'flex', alignItems: 'center', gap: '8px', margin: 0, fontSize: '1.2rem' };
