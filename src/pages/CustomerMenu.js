@@ -103,7 +103,7 @@ const CustomerMenu = () => {
 
       if (method === 'cash') {
         // 2. Generate UPI URL
-        const upiId = "YOURVPA@oksbi"; // REPLACE WITH YOUR ACTUAL UPI ID
+        const upiId = "7219787050@axl"; // REPLACE WITH YOUR ACTUAL UPI ID
         const name = "Healthiffy Cafe";
         const amount = totals.cash;
         const note = `Order-${newOrderId.slice(-4)}`;
