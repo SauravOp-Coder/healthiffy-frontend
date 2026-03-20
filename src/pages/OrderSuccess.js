@@ -57,7 +57,7 @@ const OrderSuccess = () => {
     };
   }, [orderId, navigate]);
 
-  const cafeWhatsAppNumber = "919503766769"; 
+  const cafeWhatsAppNumber = "918530912184"; 
   const message = `Hi! I just placed Order #${orderId?.slice(-4)}. I am currently tracking my location for the delivery staff.`;
   const waLink = `https://wa.me/${cafeWhatsAppNumber}?text=${encodeURIComponent(message)}`;
 
