@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Coffee, ShoppingCart, Trash2, Plus, Minus, CreditCard, Star, Search, X, ChevronRight, Loader2, Smartphone, Monitor } from 'lucide-react';
+import { Coffee, ShoppingCart, Trash2, Plus, Minus, CreditCard, Star, Search, X, ChevronRight, Loader2, QrCode } from 'lucide-react';
 import { io } from 'socket.io-client';
-import { QRCodeCanvas } from 'qrcode.react'; // Import for PC QR Code
+import { QRCodeSVG } from 'qrcode.react'; // You'll need to install this: npm install qrcode.react
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const socket = io(API_URL);
@@ -16,14 +16,13 @@ const CustomerMenu = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [isVerifying, setIsVerifying] = useState(false);
-  const [showQRCode, setShowQRCode] = useState(false); // New state for PC QR
   const [currentOrderId, setCurrentOrderId] = useState(null);
-  const [upiLink, setUpiLink] = useState('');
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [upiString, setUpiString] = useState('');
   
   const navigate = useNavigate();
 
-  // Helper to detect Mobile
-  const isMobileDevice = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   useEffect(() => {
     const savedUser = JSON.parse(localStorage.getItem('user'));
@@ -34,14 +33,13 @@ const CustomerMenu = () => {
     }
   }, [navigate, searchTerm, activeCategory]);
 
-  // Listen for Staff Approval via Socket
   useEffect(() => {
     if (currentOrderId) {
       socket.on(`payment-verified-${currentOrderId}`, (data) => {
         setIsVerifying(false);
-        setShowQRCode(false);
+        setShowQrModal(false);
         navigate('/success', { 
-          state: { orderId: currentOrderId, method: 'upi' } 
+          state: { orderId: currentOrderId, remainingCredits: data.remainingCredits } 
         });
       });
     }
@@ -61,7 +59,7 @@ const CustomerMenu = () => {
     }
   };
 
-  const categories = ["All","COFFEE", "SALAD BOWLS", "SANDWICH", "SMOOTHIES", "FRESH FRUITS & JUICE"];
+  const categories = ["All","COFFEE", "SALAD BOWLS", "OTHER BOWLS", "FRUIT BOWLS", "SANDWICH","CHIA PUDDING","ROASTED MAKHANA","OATS BOWL","SMOOTHIES","COFFEE & TEA","HEALTHY GREEN TEAS","FRESH FRUITS & JUICE","HOT BEVERAGE SHOTS"];
 
   const addToCart = (product) => {
     const existing = cart.find(item => item._id === product._id);
@@ -73,6 +71,18 @@ const CustomerMenu = () => {
     setIsCartOpen(true);
   };
 
+  const updateQuantity = (id, delta) => {
+    setCart(cart.map(item => {
+      if (item._id === id) {
+        const newQty = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }));
+  };
+
+  const removeFromCart = (id) => setCart(cart.filter(item => item._id !== id));
+
   const calculateTotal = () => {
     return cart.reduce((acc, item) => ({
       cash: acc.cash + (item.price * item.quantity),
@@ -82,7 +92,7 @@ const CustomerMenu = () => {
 
   const handleCheckout = async (method) => {
     const totals = calculateTotal();
-    
+
     if (method === 'credits' && userData.creditBalance < totals.credits) {
       alert("Insufficient Credits!");
       return;
@@ -92,99 +102,100 @@ const CustomerMenu = () => {
       const orderData = {
         userId: userData._id,
         paymentMethod: method,
-        cart: cart.map(item => ({ productId: item._id, quantity: item.quantity })),
-        totalAmount: totals.cash
+        cart: cart.map(item => ({ productId: item._id, quantity: item.quantity }))
       };
-
-      // 1. Place Order in Backend first (Status: Pending)
       const res = await axios.post(`${API_URL}/api/orders/place-order`, orderData);
       const newOrderId = res.data.order._id;
       setCurrentOrderId(newOrderId);
 
       if (method === 'cash') {
-        // 2. Generate UPI URL
-        const upiId = "7219787050@axl"; // REPLACE WITH YOUR ACTUAL UPI ID
-        const name = "Healthiffy Cafe";
-        const amount = totals.cash;
-        const note = `Order-${newOrderId.slice(-4)}`;
-        const generatedUpiURL = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(name)}&am=${amount}&tn=${encodeURIComponent(note)}&cu=INR`;
+        const upiId = "7219787050@axl"; 
+        const generatedUpiString = `upi://pay?pa=${upiId}&pn=Healthiffy&am=${totals.cash}&tn=Order-${newOrderId.slice(-4)}&cu=INR`;
+        setUpiString(generatedUpiString);
         
-        setUpiLink(generatedUpiURL);
+        setIsCartOpen(false);
+        setShowQrModal(true);
 
-        if (isMobileDevice()) {
-          // Mobile: Redirect to App
-          window.location.href = generatedUpiURL;
-          setIsVerifying(true);
-        } else {
-          // PC: Show QR Code
-          setShowQRCode(true);
-          setIsVerifying(true);
+        if (isMobile()) {
+          window.location.href = generatedUpiString;
+          // After redirecting to app, show the verifying screen
+          setTimeout(() => setIsVerifying(true), 2000);
         }
       } else {
-        // Credit Payment (Automatic Success if backend allows)
         navigate('/success', { 
-          state: { orderId: newOrderId, method: method } 
+          state: { orderId: newOrderId, remainingCredits: res.data.remainingCredits, method: method } 
         });
       }
 
       setCart([]);
-      setIsCartOpen(false);
     } catch (err) {
-      alert("Order failed. Please try again.");
+      alert("Order failed.");
     }
   };
 
   return (
     <div style={container}>
-      {/* 1. PC QR CODE MODAL */}
-      {showQRCode && (
+      {/* UPI QR & Verification Modal */}
+      {showQrModal && (
         <div style={verifyOverlay}>
           <div style={verifyCard}>
-            <Monitor size={40} color="#1a1a1a" />
-            <h2 style={{margin: '15px 0'}}>Scan to Pay</h2>
-            <div style={{background: 'white', padding: '20px', borderRadius: '15px', display: 'inline-block', border: '1px solid #eee'}}>
-              <QRCodeCanvas value={upiLink} size={200} />
-            </div>
-            <p style={{marginTop: '15px', fontWeight: 'bold', fontSize: '1.1rem'}}>Total: ₹{calculateTotal().cash}</p>
-            <p style={{color: '#666', fontSize: '0.85rem'}}>Scan using GPay, PhonePe, or Paytm</p>
-            <div style={orderRefTag}>Order ID: #{currentOrderId?.slice(-4)}</div>
-            <button onClick={() => setShowQRCode(false)} style={cancelBtn}>Cancel</button>
+            {!isVerifying ? (
+              <>
+                <h2 style={{marginBottom: '10px'}}>Scan to Pay</h2>
+                <p style={{fontSize: '0.9rem', color: '#666', marginBottom: '20px'}}>Amount: <b>₹{calculateTotal().cash}</b></p>
+                <div style={qrContainer}>
+                    <QRCodeSVG value={upiString} size={200} level="H" />
+                </div>
+                <div style={orderRefTag}>Order ID: #{currentOrderId?.slice(-4)}</div>
+                <button 
+                  onClick={() => setIsVerifying(true)} 
+                  style={{...payNowBtn, marginTop: '20px', background: '#4CAF50'}}
+                >
+                  I've Paid - Verify Now
+                </button>
+                <button onClick={() => setShowQrModal(false)} style={{background:'none', border:'none', color:'#999', marginTop: '10px', cursor:'pointer'}}>Cancel</button>
+              </>
+            ) : (
+              <>
+                <div className="spinner" style={spinnerStyle}></div>
+                <h2 style={{margin: '20px 0 10px 0'}}>Verifying Payment...</h2>
+                <p style={{color: '#666', fontSize: '0.9rem', lineHeight: '1.5'}}>
+                  Waiting for kitchen to confirm your transaction. This usually takes 10-30 seconds.
+                </p>
+                <div style={orderRefTag}>Order ID: #{currentOrderId?.slice(-4)}</div>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* 2. MOBILE VERIFYING OVERLAY */}
-      {isVerifying && !showQRCode && (
-        <div style={verifyOverlay}>
-          <div style={verifyCard}>
-            <div className="spinner" style={spinnerStyle}></div>
-            <h2 style={{margin: '20px 0 10px 0'}}>Verifying Payment...</h2>
-            <p style={{color: '#666', fontSize: '0.9rem'}}>
-              Waiting for the staff to confirm your transaction. Please do not close this screen.
-            </p>
-            <div style={orderRefTag}>Order ID: #{currentOrderId?.slice(-4)}</div>
-            <button onClick={() => setIsVerifying(false)} style={cancelBtn}>Back to Menu</button>
-          </div>
-        </div>
-      )}
-
-      {/* --- Rest of your UI --- */}
+      {/* Header */}
       <header style={headerStyle}>
         <div>
           <h1 style={logo}><Coffee size={28} /> Healthiffy</h1>
           <p style={welcomeText}>Welcome, <b>{userData?.name}</b></p>
         </div>
-        <button onClick={() => setIsCartOpen(true)} style={cartBtn}>
-          <ShoppingCart size={20} />
-          {cart.length > 0 && <span style={cartBadge}>{cart.length}</span>}
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Link to="/plans" style={navLink}>Plans</Link>
+            <button onClick={() => setIsCartOpen(true)} style={cartBtn}>
+              <ShoppingCart size={20} />
+              {cart.length > 0 && <span style={cartBadge}>{cart.length}</span>}
+            </button>
+        </div>
       </header>
 
-      {/* Menu Filter Section */}
+      {/* Search & Category Sections (Same as your original) */}
       <div style={filterSection}>
         <div style={searchBar}>
           <Search size={18} color="#999" />
-          <input type="text" placeholder="Search menu..." style={searchInput} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <input 
+            type="text" 
+            placeholder="Search our menu..." 
+            style={searchInput}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && <X size={18} onClick={() => setSearchTerm('')} style={{cursor:'pointer'}} />}
         </div>
         <div style={categoryRow}>
           {categories.map(cat => (
@@ -197,14 +208,17 @@ const CustomerMenu = () => {
       <div style={grid}>
         {products.map(item => (
           <div key={item._id} style={card}>
-            <div style={imgContainer}><img src={item.image} alt={item.name} style={imgStyle} /></div>
+            <div style={imgContainer}>
+              <img src={item.image} alt={item.name} style={imgStyle} />
+              <span style={categoryTag}>{item.category}</span>
+            </div>
             <div style={cardContent}>
-              <h3 style={productTitle}>{item.name}</h3>
-              <div style={priceContainer}>
-                <span style={cashPrice}>₹{item.price}</span>
-                <span style={creditPrice}>{item.creditCost} ⭐️</span>
-              </div>
-              <button onClick={() => addToCart(item)} style={addBtn}><Plus size={16} /> Add</button>
+                <h3 style={productTitle}>{item.name}</h3>
+                <div style={priceContainer}>
+                    <span style={cashPrice}>₹{item.price}</span>
+                    <span style={creditPrice}>{item.creditCost} ⭐️</span>
+                </div>
+                <button onClick={() => addToCart(item)} style={addBtn}><Plus size={16} /> Add</button>
             </div>
           </div>
         ))}
@@ -216,28 +230,43 @@ const CustomerMenu = () => {
           <div style={overlay} onClick={() => setIsCartOpen(false)} />
           <div style={sidebar}>
             <div style={sidebarHeader}>
-              <h2 style={{margin:0}}>Your Basket</h2>
+              <h2 style={{margin:0, fontSize: '1.4rem'}}>Your Basket</h2>
               <button onClick={() => setIsCartOpen(false)} style={closeSidebar}><X size={24} /></button>
             </div>
             <div style={cartList}>
-              {cart.map(item => (
-                <div key={item._id} style={cartItem}>
-                  <div style={{flex:1}}>
-                    <div style={cartItemName}>{item.name}</div>
-                    <div style={cartItemSub}>₹{item.price}</div>
+              {cart.length === 0 ? (
+                <div style={emptyCart}><ShoppingCart size={48} color="#eee" /><p>Your basket is empty</p></div>
+              ) : (
+                cart.map(item => (
+                  <div key={item._id} style={cartItem}>
+                    <div style={{ flex: 1 }}>
+                      <div style={cartItemName}>{item.name}</div>
+                      <div style={cartItemSub}>₹{item.price} / {item.creditCost}⭐️</div>
+                      <div style={qtyControls}>
+                        <button onClick={() => updateQuantity(item._id, -1)} style={qtyBtn}><Minus size={12}/></button>
+                        <span style={qtyText}>{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item._id, 1)} style={qtyBtn}><Plus size={12}/></button>
+                      </div>
+                    </div>
+                    <div style={{textAlign: 'right'}}>
+                      <button onClick={() => removeFromCart(item._id)} style={delBtn}><Trash2 size={18}/></button>
+                      <div style={itemTotalText}>₹{item.price * item.quantity}</div>
+                    </div>
                   </div>
-                  <div style={itemTotalText}>₹{item.price * item.quantity}</div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             {cart.length > 0 && (
               <div style={sidebarFooter}>
+                <div style={summaryBox}>
+                    <div style={summaryLine}><span>Subtotal (Cash)</span> <span>₹{calculateTotal().cash}</span></div>
+                    <div style={summaryLine}><span>Subtotal (Credits)</span> <span>{calculateTotal().credits} ⭐️</span></div>
+                </div>
                 <button onClick={() => handleCheckout('cash')} style={payNowBtn}>
-                  {isMobileDevice() ? <Smartphone size={18} /> : <Monitor size={18} />} 
-                  Pay via UPI (₹{calculateTotal().cash})
+                    Pay via UPI / QR <ChevronRight size={18} />
                 </button>
                 <button onClick={() => handleCheckout('credits')} style={payCreditBtn}>
-                  Pay with Credits ({calculateTotal().credits} ⭐️)
+                    Pay {calculateTotal().credits} Credits <Star size={16} fill="white" />
                 </button>
               </div>
             )}
@@ -249,44 +278,63 @@ const CustomerMenu = () => {
 };
 
 // --- ADDITIONAL STYLES ---
-const container = { padding: '15px', maxWidth: '1200px', margin: '0 auto', fontFamily: '"Inter", sans-serif' };
+const qrContainer = {
+    background: 'white',
+    padding: '15px',
+    borderRadius: '12px',
+    display: 'inline-block',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+    marginBottom: '15px'
+};
+
+// --- EXISTING STYLES (Keep as per your code) ---
+const container = { padding: '15px', maxWidth: '1200px', margin: '0 auto', fontFamily: '"Inter", sans-serif', backgroundColor: '#fcfcfc' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' };
-const logo = { display: 'flex', alignItems: 'center', gap: '8px', margin: 0 };
-const welcomeText = { margin: 0, fontSize: '0.8rem', color: '#666' };
-const cartBtn = { position: 'relative', background: '#1a1a1a', color: 'white', border: 'none', padding: '10px', borderRadius: '12px' };
-const cartBadge = { position: 'absolute', top: '-5px', right: '-5px', background: '#f39c12', padding: '2px 6px', borderRadius: '10px', fontSize: '0.7rem' };
-const filterSection = { marginBottom: '20px' };
-const searchBar = { display: 'flex', alignItems: 'center', gap: '10px', background: '#fff', padding: '10px', borderRadius: '10px', border: '1px solid #eee' };
-const searchInput = { border: 'none', outline: 'none', width: '100%' };
-const categoryRow = { display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px' };
-const tabBtn = { padding: '8px 15px', borderRadius: '20px', border: '1px solid #eee', background: 'white', whiteSpace: 'nowrap' };
-const activeTab = { ...tabBtn, background: '#1a1a1a', color: 'white' };
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px' };
-const card = { background: '#fff', borderRadius: '15px', border: '1px solid #eee', overflow: 'hidden' };
-const imgContainer = { height: '120px', background: '#f9f9f9' };
+const logo = { display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: '#1a1a1a', fontSize: '1.5rem' };
+const welcomeText = { margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' };
+const navLink = { textDecoration: 'none', color: '#1a1a1a', fontWeight: '600', fontSize: '0.9rem', padding: '8px 12px' };
+const cartBtn = { position: 'relative', background: '#1a1a1a', color: 'white', border: 'none', padding: '10px', borderRadius: '12px', cursor: 'pointer' };
+const cartBadge = { position: 'absolute', top: '-5px', right: '-5px', background: '#f39c12', color: 'white', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' };
+const filterSection = { marginBottom: '25px' };
+const searchBar = { display: 'flex', alignItems: 'center', gap: '10px', background: '#fff', padding: '12px 16px', borderRadius: '14px', marginBottom: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #eee' };
+const searchInput = { border: 'none', background: 'none', outline: 'none', width: '100%', fontSize: '0.95rem' };
+const categoryRow = { display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' };
+const tabBtn = { padding: '8px 16px', borderRadius: '10px', border: '1px solid #eee', background: 'white', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '0.85rem', color: '#555' };
+const activeTab = { ...tabBtn, background: '#1a1a1a', color: 'white', border: '1px solid #1a1a1a' };
+const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' };
+const card = { background: '#fff', borderRadius: '16px', border: '1px solid #f0f0f0', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' };
+const imgContainer = { position: 'relative', height: '140px' };
 const imgStyle = { width: '100%', height: '100%', objectFit: 'cover' };
-const cardContent = { padding: '10px' };
-const productTitle = { fontSize: '0.9rem', margin: '0 0 5px 0' };
-const priceContainer = { display: 'flex', justifyContent: 'space-between', marginBottom: '10px' };
-const cashPrice = { fontWeight: 'bold' };
-const creditPrice = { color: '#f39c12', fontSize: '0.8rem' };
-const addBtn = { width: '100%', padding: '8px', borderRadius: '8px', border: 'none', background: '#f0f0f0', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' };
-const overlay = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 100 };
-const sidebar = { position: 'fixed', right: 0, top: 0, width: '320px', height: '100%', background: 'white', zIndex: 101, display: 'flex', flexDirection: 'column' };
-const sidebarHeader = { padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' };
-const closeSidebar = { border: 'none', background: 'none' };
-const cartList = { flex: 1, padding: '20px', overflowY: 'auto' };
-const cartItem = { display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #eee' };
-const cartItemName = { fontSize: '0.9rem', fontWeight: 'bold' };
-const cartItemSub = { fontSize: '0.8rem', color: '#888' };
-const itemTotalText = { fontWeight: 'bold' };
-const sidebarFooter = { padding: '20px', borderTop: '1px solid #eee' };
-const payNowBtn = { width: '100%', background: '#1a1a1a', color: 'white', padding: '15px', borderRadius: '10px', border: 'none', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' };
-const payCreditBtn = { width: '100%', background: '#f39c12', color: 'white', padding: '15px', borderRadius: '10px', border: 'none', fontWeight: 'bold' };
-const verifyOverlay = { position: 'fixed', top:0, left:0, width:'100%', height:'100%', backgroundColor:'white', zIndex: 1000, display:'flex', justifyContent:'center', alignItems:'center', textAlign:'center' };
-const verifyCard = { padding: '20px', maxWidth: '400px' };
-const orderRefTag = { marginTop: '20px', padding: '10px', background: '#f5f5f5', borderRadius: '8px', fontWeight: 'bold' };
-const cancelBtn = { marginTop: '20px', background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontWeight: 'bold' };
+const categoryTag = { position: 'absolute', bottom: '8px', left: '8px', background: 'rgba(255,255,255,0.9)', color: '#1a1a1a', padding: '3px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 'bold' };
+const cardContent = { padding: '12px' };
+const productTitle = { margin: '0 0 8px 0', fontSize: '1rem', color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
+const priceContainer = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' };
+const cashPrice = { fontWeight: '700', fontSize: '0.95rem' };
+const creditPrice = { color: '#f39c12', fontWeight: '600', fontSize: '0.85rem' };
+const addBtn = { width: '100%', background: '#f5f5f5', color: '#1a1a1a', border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' };
+const overlay = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)', zIndex: 1000, backdropFilter: 'blur(2px)' };
+const sidebar = { position: 'fixed', right: 0, top: 0, width: 'min(400px, 90%)', height: '100%', background: 'white', boxShadow: '-10px 0 30px rgba(0,0,0,0.1)', zIndex: 1001, display: 'flex', flexDirection: 'column' };
+const sidebarHeader = { padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const closeSidebar = { border: 'none', background: 'none', cursor: 'pointer', color: '#999' };
+const cartList = { flexGrow: 1, overflowY: 'auto', padding: '20px' };
+const emptyCart = { textAlign: 'center', padding: '40px 0', color: '#999' };
+const cartItem = { display: 'flex', padding: '15px 0', borderBottom: '1px solid #f9f9f9' };
+const cartItemName = { fontWeight: '600', fontSize: '0.95rem' };
+const cartItemSub = { fontSize: '0.75rem', color: '#999', margin: '4px 0' };
+const qtyControls = { display: 'flex', alignItems: 'center', gap: '12px' };
+const qtyBtn = { width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #eee', cursor: 'pointer' };
+const qtyText = { fontSize: '0.9rem', fontWeight: '600' };
+const delBtn = { color: '#ff4d4d', border: 'none', background: 'none', cursor: 'pointer' };
+const itemTotalText = { fontWeight: '700', fontSize: '0.95rem' };
+const sidebarFooter = { padding: '20px', borderTop: '1px solid #eee', background: '#fcfcfc' };
+const summaryBox = { marginBottom: '15px' };
+const summaryLine = { display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' };
+const payNowBtn = { width: '100%', background: '#1a1a1a', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', marginBottom: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' };
+const payCreditBtn = { width: '100%', background: '#f39c12', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' };
+
+const verifyOverlay = { position: 'fixed', top:0, left:0, width:'100%', height:'100%', backgroundColor:'rgba(255,255,255,0.98)', zIndex: 2000, display:'flex', justifyContent:'center', alignItems:'center', textAlign:'center' };
+const verifyCard = { padding: '40px', maxWidth: '350px' };
+const orderRefTag = { marginTop: '20px', padding: '8px 15px', background: '#f0f0f0', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 'bold' };
 const spinnerStyle = { width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #f39c12', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' };
 
 export default CustomerMenu;
