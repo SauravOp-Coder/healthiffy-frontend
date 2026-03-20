@@ -133,7 +133,7 @@ const CustomerMenu = () => {
 
   const QRPrePayOverlay = () => {
     const totals = calculateTotal();
-    const upiId = "sauravshinde@oksbi";
+    const upiId = "7219787050@axl";
     const upiPayload = `upi://pay?pa=${upiId}&pn=Healthiffy%20Cafe&am=${totals.cash}&cu=INR`;
 
     return (
@@ -146,7 +146,7 @@ const CustomerMenu = () => {
                     <p style={instructionHeader}>📱 Paying on Mobile?</p>
                     <ul style={instructionList}>
                         <li>Take a Screenshot of this QR.</li>
-                        <li>Open GPay/PhonePe > Scan > Upload from Gallery.</li>
+                        <li>Open GPay/PhonePe - Scan - Upload from Gallery.</li>
                     </ul>
                 </div>
                 <button onClick={claimPayment} style={confirmPaidBtn}>
