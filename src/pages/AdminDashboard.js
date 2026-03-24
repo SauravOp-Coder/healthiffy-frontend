@@ -15,7 +15,7 @@ const AdminDashboard = () => {
   const [newProduct, setNewProduct] = useState({ name: '', price: '', creditCost: '', category: 'Coffee', image: '' });
   const [newPlan, setNewPlan] = useState({ name: '', price: '', credits: '', description: '' });
 
-  const categoriesList = ["Coffee", "SALAD BOWLS", "OTHER BOWLS", "FRUIT BOWLS", "SANDWICH","CHIA PUDDING","ROASTED MAKHANA","OATS BOWL","SMOOTHIES","COFFEE & TEA","HEALTHY GREEN TEAS","FRESH FRUITS & JUICE","HOT BEVERAGE SHOTS"];
+  const categoriesList = ["COFFEE", "SALAD BOWLS", "OTHER BOWLS", "FRUIT BOWLS", "SANDWICH","CHIA PUDDING","ROASTED MAKHANA","OATS BOWL","SMOOTHIES","COFFEE & TEA","HEALTHY GREEN TEAS","FRESH FRUITS & JUICE","HOT BEVERAGE SHOTS"];
 
   useEffect(() => {
     fetchData();
