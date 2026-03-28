@@ -250,10 +250,7 @@ const kicker1 = { fontSize: '0.8rem', fontWeight: '700', color: '#333' };
 const ctaMain = { background: '#27ae60', color: '#fff', border: 'none', padding: '16px 35px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' };
 const ctaSecondary = { background: 'transparent', color: '#1a1a1a', border: '2px solid #1a1a1a', padding: '15px 35px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' };
 
-const sectionWrapper = { width: '100%', boxSizing: 'border-box' };
 const centeredHeader = { textAlign: 'center', marginBottom: '60px' };
-const tagline = { fontSize: '0.7rem', fontWeight: '900', letterSpacing: '3px', color: '#27ae60', marginBottom: '10px' };
-const displayTitle = { fontWeight: '800' };
 
 const menuGrid = { display: 'grid' };
 const menuTitle = { fontSize: '1.3rem', borderBottom: '2px solid #1a1a1a', paddingBottom: '10px', marginBottom: '25px', fontWeight: '800' };
@@ -262,9 +259,6 @@ const itemName = { fontSize: '1.05rem', fontWeight: '700' };
 const itemDesc = { fontSize: '0.85rem', color: '#777', marginTop: '3px' };
 const itemPrice = { fontWeight: '800', fontSize: '1.05rem' };
 
-const splitLayout = { display: 'flex', alignItems: 'center' };
-const splitText = { flex: 1 };
-const bodyText = { fontSize: '1.1rem', color: '#555', lineHeight: '1.7', marginTop: '20px' };
 const imagePlaceholder = { overflow: 'hidden' };
 
 const blogGrid = { display: 'grid', gap: '30px' };
@@ -354,7 +348,60 @@ const mobileNavItem = {
 };
 
 
+const sectionWrapper = {
+  width: '100%',
+  display: 'flex',
+  justifyContent: 'center'
+};
 
+const splitLayout = {
+  display: 'flex',
+  alignItems: 'center', // 🔥 fixes uneven alignment
+  justifyContent: 'space-between',
+  gap: '60px',
+  maxWidth: '1200px',
+  width: '100%'
+};
+
+const splitText = {
+  flex: 1,
+  maxWidth: '550px'
+};
+
+const imageContainer = (isMobile) => ({
+  flex: 1,
+  display: 'flex',
+  justifyContent: 'center',
+  width: isMobile ? '100%' : '50%',
+  height: isMobile ? '320px' : '480px'
+});
+
+const imageStyle = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  borderRadius: '16px',
+  boxShadow: '0 10px 30px rgba(0,0,0,0.08)' // ✨ premium look
+};
+
+const tagline = {
+  fontSize: '14px',
+  letterSpacing: '2px',
+  color: '#2e7d32',
+  marginBottom: '10px'
+};
+
+const displayTitle = {
+  fontWeight: '700',
+  marginBottom: '20px',
+  lineHeight: '1.2'
+};
+
+const bodyText = {
+  fontSize: '17px',
+  lineHeight: '1.8',
+  color: '#555'
+};
 
 
 
