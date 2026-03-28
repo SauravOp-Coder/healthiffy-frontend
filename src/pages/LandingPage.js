@@ -355,79 +355,7 @@ const mobileNavItem = {
 
 
 
-/* CONTAINER (parent of both) */
-.splitLayout {
-  display: flex;
-  align-items: center; /* 🔥 fixes uneven look */
-  justify-content: space-between;
-  gap: 60px;
-  width: 100%;
-}
 
-/* TEXT SIDE */
-.splitText {
-  flex: 1;
-  max-width: 550px;
-}
-
-.tagline {
-  font-size: 14px;
-  letter-spacing: 2px;
-  color: #2e7d32;
-  margin-bottom: 10px;
-}
-
-.displayTitle {
-  font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 20px;
-  line-height: 1.2;
-}
-
-.bodyText {
-  font-size: 17px;
-  line-height: 1.8;
-  color: #555;
-}
-
-/* IMAGE SIDE */
-.imagePlaceholder {
-  flex: 1;
-  width: 50%;
-  height: 500px;
-  display: flex;
-  justify-content: center;
-}
-
-.imagePlaceholder img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* ✨ premium */
-}
-
-/* 📱 RESPONSIVE */
-@media (max-width: 900px) {
-  .splitLayout {
-    flex-direction: column;
-    text-align: center;
-    gap: 30px;
-  }
-
-  .splitText {
-    max-width: 100%;
-  }
-
-  .displayTitle {
-    font-size: 2rem;
-  }
-
-  .imagePlaceholder {
-    width: 100%;
-    height: 350px;
-  }
-}
 
 
 
