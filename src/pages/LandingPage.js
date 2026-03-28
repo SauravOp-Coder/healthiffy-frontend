@@ -140,8 +140,9 @@ const LandingPage = () => {
             <p style={tagline}>OUR STORY</p>
             <h2 style={{ ...displayTitle, fontSize: isMobile ? '2rem' : '3rem' }}>Mindful. Honest.</h2>
             <p style={bodyText}>
-              Healthiffy was born out of a simple frustration: why is healthy food so boring? 
-              We kitchen use zero refined sugars, zero seed oils, and 100% love.
+              Healthiffy was born out of a simple frustration—why does healthy food have to be boring and uninspiring? In a world where taste often comes at the cost of nutrition, we set out to create something different. We believe that healthy eating should be exciting, flavorful, and something you genuinely look forward to, not just a routine you follow out of obligation.
+
+At Healthiffy, our kitchen follows a clean and conscious approach: zero refined sugars, zero seed oils, and 100% love in every dish. We focus on using natural, wholesome ingredients to craft meals that nourish your body while satisfying your cravings. For us, it’s not just about food—it’s about building a lifestyle where health and taste go hand in hand.
             </p>
           </div>
           <div style={{ ...imagePlaceholder, width: isMobile ? '100%' : '50%', height: isMobile ? '350px' : '500px' }}>
