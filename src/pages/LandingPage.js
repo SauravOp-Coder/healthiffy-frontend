@@ -171,7 +171,7 @@ const LandingPage = () => {
         <div style={{ ...footerGrid, flexDirection: isMobile ? 'column' : 'row', gap: '40px' }}>
           <div style={{ flex: 2 }}>
             <h2 style={{ fontSize: isMobile ? '1.8rem' : '2.2rem', marginBottom: '20px' }}>Join the Journey</h2>
-            <div style={contactDetail}><MapPin size={18} /> FC Road, Shivajinagar, Pune</div>
+            <div style={contactDetail}><MapPin size={18} /> Shop Number 6,Healthiffy,Mantri House,FC Road,Inside First Gate,Opposite MacDonald's, Shivajinagar ,Pune, Maharashtra 41104</div>
             <div style={contactDetail}><Phone size={18} /> +91 82630 45675</div>
           </div>
           <div style={{ display: 'flex', gap: '50px' }}>
