@@ -264,7 +264,7 @@ const itemPrice = { fontWeight: '800', fontSize: '1.05rem' };
 
 const splitLayout = { display: 'flex', alignItems: 'center' };
 const splitText = { flex: 1 };
-const bodyText = { fontSize: '1.1rem', color: '#555', lineHeight: '1.7', marginTop: '20px' ,marginLeft: '20px' };
+const bodyText = { fontSize: '1.1rem', color: '#555', lineHeight: '1.7', marginTop: '20px' ,paddingLeft: '20px' };
 const imagePlaceholder = { overflow: 'hidden' };
 
 const blogGrid = { display: 'grid', gap: '30px' };
